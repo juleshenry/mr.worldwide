@@ -3,8 +3,9 @@ Consumes a single word. Produces a gif of that word translating between many lan
 
 Basic 
 
-mister-worldwide --size 256 256 --text love --font poppins --font-color green --background-color blue --languages all --interval-ms 50
-->
+```
+python3 start.py --size 256 256 --text love --font_path fonts/Poppins-Medium.ttf --font_color-color green --background-color blue --languages all --interval-ms 50
+```
 
 Intermediate
 

@@ -106,5 +106,5 @@ def main():
     create_gif(params)
 
 if __name__ == "__main__":
-	print('Give desired text')
+    print('Give desired text')
     main()
