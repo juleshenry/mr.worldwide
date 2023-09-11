@@ -1,8 +1,10 @@
 import os
 
 if __name__ == "__main__":
-    print("Give desired text")
+    cmd = ('python3 mr-worldwide.py --size "256,256" --text love --font_path fonts/Quivira-A8VL.ttf '+
+        '--font_color "256,256,256" --background_color "256,256,256" --languages all --delay 50')
+    print(cmd)
     os.system(
-        'python3 mr-worldwide.py --size "256,256" --text love --font_path fonts/Poppins-Medium.ttf --font_color-color green --background-color blue --languages all --interval-ms 50'
+        cmd
     )
-    # main()
+    

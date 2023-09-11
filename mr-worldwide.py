@@ -56,12 +56,12 @@ Params:
 Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 """
-
+FONT_SIZE = 16
 
 def create_image(text, font, font_color, background_color, width, height):
     image = Image.new("RGB", (width, height), background_color)
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype(font, font_size)
+    font = ImageFont.truetype(font, FONT_SIZE)
     text_width, text_height = draw.textsize(text, font=font)
     x = (width - text_width) // 2
     y = (height - text_height) // 2
@@ -69,22 +69,26 @@ def create_image(text, font, font_color, background_color, width, height):
     return image
 
 
-def create_gif(params):
+def get_images(params):
     text = params.text
     delay = params.delay
     font_color = params.font_color
     font_path = params.font_path
     background_color = params.background_color
-    width, height = params.width, params.height
+    width, height = params.size.split(',')
 
+    return 
+
+def create_gif(params):
+    if params.languages == 'all':
+        languages = ['en','zh']
     # Create GIF frames
     frames = []
-    for language, background_image in params.images:
-        image = create_image(
-            text, font_path, font_color, background_color, width, height
-        )
-        # Overlay the background_image onto the image here
-        frames.append(image)
+    image = create_image(
+        text, font_path, font_color, background_color, width, height
+    )
+    # Overlay the background_image onto the image here
+    frames.append(image)
 
     # Save GIF
     imageio.mimsave(
@@ -102,7 +106,7 @@ def main():
         "--delay", type=int, default=100, help="Delay between frames in milliseconds"
     )
     parser.add_argument(
-        "--font_color", type=str, default="255,255,255", help="Font color (R,G,B)"
+        "--font_color", type=str,required=True, help="Font color (R,G,B)"
     )
     parser.add_argument("--font_path", required=True, help="Path to the font file")
     parser.add_argument(
@@ -110,19 +114,13 @@ def main():
     )
     parser.add_argument("--size", type=str, default="256,256", help="Image width")
     parser.add_argument("--gif_path", default=None, help="Path to save the output GIF")
-
+    parser.add_argument("--languages", nargs='+', default="all", help="two letter code listˀ")
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
+    print(params.background_color.split(','))
     params.background_color = tuple(map(int, params.background_color.split(",")))
-    params.images = [params.images[i : i + 2] for i in range(0, len(params.images), 2)]
-
+    # params.images = [params.images[i : i + 2] for i in range(0, len(params.images), 2)]
     create_gif(params)
 
-
-import os
-
 if __name__ == "__main__":
-    print("Give desired text")
-    os.system("python3 start.py")
-    # --size "256,256" --text love --font_path fonts/Poppins-Medium.ttf --font_color-color green --background-color blue --languages all --interval-ms 50
-    # main()
+     main()

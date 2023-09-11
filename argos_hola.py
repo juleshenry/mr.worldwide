@@ -1,0 +1,56 @@
+'''
+import argostranslate.package
+import argostranslate.translate
+
+from_code = "en"
+to_code = "es"
+
+# Download and install Argos Translate package
+argostranslate.package.update_package_index()
+available_packages = argostranslate.package.get_available_packages()
+package_to_install = next(
+    filter(
+        lambda x: x.from_code == from_code and x.to_code == to_code, available_packages
+    )
+)
+argostranslate.package.install_from_path(package_to_install.download())
+
+# Translate
+translatedText = argostranslate.translate.translate("Hello World", from_code, to_code)
+print(translatedText)
+# '¡Hola Mundo!'
+'''
+import argostranslate.package
+import argostranslate.translate
+
+
+
+def from_to_text(from_code,to_code,text):
+    # Download and install Argos Translate package
+    argostranslate.package.update_package_index()
+    try:
+        available_packages = argostranslate.package.get_available_packages()
+        package_to_install = next(
+            filter(
+                lambda x: x.from_code == from_code and x.to_code == to_code, available_packages
+            )
+        )
+        argostranslate.package.install_from_path(package_to_install.download())
+
+        # Translate
+        tt = argostranslate.translate.translate(text, from_code, to_code)
+        return tt
+    except:
+        return None
+if __name__=='__main__':
+    languages = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+    from_code = "en"
+    trans =[]
+    text = "Hello World"
+    for to_code in languages:
+        if to_code == from_code:continue
+        print(f"{from_code} to {to_code}")
+        if text!=(u:=from_to_text(from_code,to_code,text)) and u:
+            print(u)
+            trans+=[u]
+# '¡Hola Mundo!'    
