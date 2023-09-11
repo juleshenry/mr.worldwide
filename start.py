@@ -1,5 +1,8 @@
 import os,sys
-from PIL import Image
+import argparse
+from PIL import Image, ImageDraw, ImageFont
+import imageio
+
 
 '''
 ############################################
@@ -53,9 +56,6 @@ Params:
 Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 '''
-import argparse
-from PIL import Image, ImageDraw, ImageFont
-import imageio
 
 def create_image(text, font, font_color, background_color, width, height):
     image = Image.new("RGB", (width, height), background_color)
@@ -93,10 +93,8 @@ def main():
     parser.add_argument("--font_color", type=str, default="255,255,255", help="Font color (R,G,B)")
     parser.add_argument("--font_path", required=True, help="Path to the font file")
     parser.add_argument("--background_color", type=str, default="0,0,0", help="Background color (R,G,B)")
-    parser.add_argument("--width", type=int, default=500, help="Image width")
-    parser.add_argument("--height", type=int, default=500, help="Image height")
-    parser.add_argument("--images", nargs="+", required=True, help="List of language and background image pairs")
-    parser.add_argument("--gif_path", required=True, help="Path to save the output GIF")
+    parser.add_argument("--size", type=str, default="256,256", help="Image width")
+    parser.add_argument("--gif_path", default=None, help="Path to save the output GIF")
 
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
@@ -104,7 +102,10 @@ def main():
     params.images = [params.images[i:i+2] for i in range(0, len(params.images), 2)]
 
     create_gif(params)
+import os
 
 if __name__ == "__main__":
     print('Give desired text')
-    main()
+    os.system("python3 start.py")
+    # --size "256,256" --text love --font_path fonts/Poppins-Medium.ttf --font_color-color green --background-color blue --languages all --interval-ms 50
+    # main()
