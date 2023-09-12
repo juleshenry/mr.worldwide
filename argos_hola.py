@@ -52,7 +52,8 @@ def get_trans(text, languages=None):
         if to_code == from_code:continue
         # print(f"{from_code} to {to_code}")
         if text!=(u:=from_to_text(from_code,to_code,text)) and u:
-            trans+=[u]
+            print(u)
+            trans+=[u.replace('*','')]
     return trans
 
 if __name__=='__main__':

@@ -63,7 +63,7 @@ def create_image(text, font, font_color, background_color, width, height):
     image = Image.new("RGB", (width, height))# background_color)
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(font, FONT_SIZE)
-    x = (width - 16) // 2
+    x = (width - 48) // 2
     y = (height - 16) // 2
     draw.text((x, y), text, font=font, fill=font_color)
     return image
@@ -94,7 +94,7 @@ def create_gif(params):
         save_all=True,
         append_images=frames[1:],
         loop=0,  # 0 means infinite loop
-        duration=100,  # Time in milliseconds between frames
+        duration=params.delay,  # Time in milliseconds between frames
     )
 
     # # Save GIF
