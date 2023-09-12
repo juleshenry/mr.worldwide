@@ -59,11 +59,12 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 FONT_SIZE = 16
 
 def create_image(text, font, font_color, background_color, width, height):
+    print(type(width),type(height))
     image = Image.new("RGB", (width, height))# background_color)
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(font, FONT_SIZE)
-    x = (width - width) // 2
-    y = (height - height) // 2
+    x = (width - 16) // 2
+    y = (height - 16) // 2
     draw.text((x, y), text, font=font, fill=font_color)
     return image
 
@@ -119,7 +120,7 @@ def main():
         "--background_color", type=str, default="0,0,0", help="Background color (R,G,B)"
     )
     parser.add_argument("--size", type=str, default="256,256", help="Image width")
-    parser.add_argument("--gif_path", default=".", help="Path to save the output GIF")
+    parser.add_argument("--gif_path", default=f"output.gif", help="Path to save the output GIF")
     parser.add_argument("--languages", nargs='+', default="all", help="two letter code listˀ")
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
