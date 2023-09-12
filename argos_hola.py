@@ -42,15 +42,20 @@ def from_to_text(from_code,to_code,text):
         return tt
     except:
         return None
-if __name__=='__main__':
-    languages = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+
+def get_trans(text, languages=None):
+    if not languages:
+        languages = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
     from_code = "en"
     trans =[]
-    text = "Hello World"
     for to_code in languages:
         if to_code == from_code:continue
-        print(f"{from_code} to {to_code}")
+        # print(f"{from_code} to {to_code}")
         if text!=(u:=from_to_text(from_code,to_code,text)) and u:
-            print(u)
             trans+=[u]
+    return trans
+
+if __name__=='__main__':
+    text = "Hello"
+    get_trans(text)
 # '¡Hola Mundo!'    
