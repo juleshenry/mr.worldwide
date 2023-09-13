@@ -56,15 +56,14 @@ Params:
 Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 """
-FONT_SIZE = 16
 
-def create_image(text, font, font_color, background_color, width, height):
-    print(type(width),type(height))
-    image = Image.new("RGB", (width, height))# background_color)
+
+def create_image(text, font, font_color, font_size, background_color, width, height):
+    image = Image.new("RGB", (width, height), color=background_color)
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype(font, FONT_SIZE)
-    x = (width - 48) // 2
-    y = (height - 16) // 2
+    font = ImageFont.truetype(font, font_size)
+    x = (width - font_size*3) // 2
+    y = (height - font_size) // 2
     draw.text((x, y), text, font=font, fill=font_color)
     return image
 
@@ -74,17 +73,18 @@ def create_gif(params):
     font_color = params.font_color
     font_path = params.font_path
     background_color = params.background_color
-    width, height = (int(x) for x in params.size.split(','))
+    font_size = params.font_size
 
+    width, height = (int(x) for x in params.size.split(','))
     if params.languages == ['all']:
         params.languages = None
+
     # Create GIF frames
     frames = []
     trans = get_trans(text, languages=params.languages)
     for t in trans:
-        print('saving',t)
         image = create_image(
-            t, font_path, font_color, background_color, width, height
+            t, font_path, font_color, font_size, background_color, width, height
         )
         # Overlay the background_image onto the image here
         frames.append(image)
@@ -94,14 +94,9 @@ def create_gif(params):
         save_all=True,
         append_images=frames[1:],
         loop=0,  # 0 means infinite loop
-        duration=params.delay,  # Time in milliseconds between frames
+        duration=delay,  # Time in milliseconds between frames
     )
-
-    # # Save GIF
-    # imageio.mimsave(
-    #     params.gif_path, frames, duration=delay / 1000
-    # )  # Duration in seconds
-    print("GIF created!")
+    print("GIF created as {params.gif_path}!")
 
 
 def main():
@@ -111,6 +106,9 @@ def main():
     parser.add_argument("--text", required=True, help="The text to display")
     parser.add_argument(
         "--delay", type=int, default=100, help="Delay between frames in milliseconds"
+    )
+    parser.add_argument(
+        "--font_size", type=int, default=32, help="Delay between frames in milliseconds"
     )
     parser.add_argument(
         "--font_color", type=str,required=True, help="Font color (R,G,B)"
@@ -124,9 +122,7 @@ def main():
     parser.add_argument("--languages", nargs='+', default="all", help="two letter code listˀ")
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
-    # print(params.background_color.split(','))
     params.background_color = tuple(map(int, params.background_color.split(",")))
-    # params.images = [params.images[i : i + 2] for i in range(0, len(params.images), 2)]
     create_gif(params)
 
 if __name__ == "__main__":
