@@ -4,14 +4,15 @@ Consumes a single word. Produces a gif of that word translating between many lan
 Basic 
 
 ```
-python3 start.py --size 256 256 --text love --font_path fonts/Poppins-Medium.ttf --font_color-color green --background-color blue --languages all --interval-ms 50
+python3 mr-worldwide.py --size "256,256" --text love --font_path fonts/arial.ttf --font_color "256,32,32" --background_color "256,256,256" --languages all --delay 300
 ```
 
 Intermediate
-
-
-mister-worldwide --size 256 256 --text love --font poppins --font-color green --background-color blue -background-image back.jpg -fit-method stretch  --languages es zh ru pt kr --interval round-robin-sinosoidal --interval-ms 50
-
+```
+--round_robin true #true or false
+--background-color blue #red,blue,green,etc.
+--background-images #list of image paths, stretched to fit box size, must equal number of languages
+```
 
 **round-robin-sinosoidal**
 Start at A_0, emphasizing for interval-ms time, then cycle through all other options until A_1 for interval-ms time, then A_2, and so on.

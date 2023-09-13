@@ -48,10 +48,10 @@ def get_trans(text, languages=None):
     languages must be a list of 
     '''
     all_langs = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-    if any(l not in all_langs for l in languages):
-        raise ValueError(f"Invalid lang supplied in following list: {languages}")
     if not languages:
         languages = all_langs
+    if any(l not in all_langs for l in languages):
+        raise ValueError(f"Invalid lang supplied in following list: {languages}")
     from_code = "en"
     trans =[]
     for to_code in languages:

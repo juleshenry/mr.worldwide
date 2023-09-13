@@ -1,7 +1,5 @@
-import os, sys
 import argparse
 from PIL import Image, ImageDraw, ImageFont
-import imageio
 from argos_hola import get_trans
 
 """
@@ -62,7 +60,7 @@ def create_image(text, font, font_color, font_size, background_color, width, hei
     image = Image.new("RGB", (width, height), color=background_color)
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(font, font_size)
-    x = (width - font_size*3) // 2
+    x = (width - font_size*4) // 2
     y = (height - font_size) // 2
     draw.text((x, y), text, font=font, fill=font_color)
     return image
@@ -96,7 +94,7 @@ def create_gif(params):
         loop=0,  # 0 means infinite loop
         duration=delay,  # Time in milliseconds between frames
     )
-    print("GIF created as {params.gif_path}!")
+    print(f"GIF created as {params.gif_path}!")
 
 
 def main():
