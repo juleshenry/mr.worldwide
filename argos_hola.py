@@ -39,25 +39,11 @@ def from_to_text(from_code,to_code,text):
             )
         )[0]
         argostranslate.package.install_from_path(package_to_install.download())
-        # TO 2 FROM
-        package_to_install = list(
-            filter(
-                lambda x: (x.from_code == to_code and x.from_code == to_code)
-                , available_packages
-            )
-        )[0]
-        argostranslate.package.install_from_path(package_to_install.download())
         # Translate
         tt = argostranslate.translate.translate(text, from_code, to_code)
-        print(text,from_code,to_code)
     except IndexError as ie:
         return None
-        
-
-    
     print(tt)
-    print(argostranslate.translate.translate(tt, to_code, from_code))
-    print('*'*88)
     return tt
     # except:
     #     return None

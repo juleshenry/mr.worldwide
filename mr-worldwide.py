@@ -56,14 +56,6 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 """
 
 
-def create_image(text, font, font_color, font_size, background_color, width, height):
-    image = Image.new("RGB", (width, height), color=background_color)
-    draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype(font, font_size)
-    x = (width - font_size*4) // 2
-    y = (height - font_size) // 2
-    draw.text((x, y), text, font=font, fill=font_color)
-    return image
 
 def create_gif(params):
     text = params.text
@@ -80,9 +72,20 @@ def create_gif(params):
     # Create GIF frames
     frames = []
     trans = get_trans(text, languages=params.languages)
+    max_width = max(len(s)*font_size for s in trans)
+
+    def create_image(text, font, font_color, font_size, background_color, width, height):
+        image = Image.new("RGB", (width, height), color=background_color)
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.truetype(font, height/2)
+        x = (width - font_size*max_width//2) // 2
+        y = (height - font_size) // 2
+        draw.text((x, y), text, font=font, fill=font_color)
+        return image
+    
     for t in trans:
         image = create_image(
-            t, font_path, font_color, font_size, background_color, width, height
+            t, font_path, font_color, font_size, background_color, max_width, height
         )
         # Overlay the background_image onto the image here
         frames.append(image)
