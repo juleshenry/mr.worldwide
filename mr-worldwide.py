@@ -65,14 +65,16 @@ def get_max_width(trans, languages, font_size) -> int:
     mx = 0
     for t,l in zip(trans,languages):
         adj_len = len(t) * lang_fudge.get(l, 2.1) * font_size
-        print(t)
-        print(l, adj_len)
         mx = (adj_len if mx<adj_len else mx)
     return int(mx)
     
 def create_gif(params):
     # PARAMS INPUT
     text = params.text
+    text_array = params.text_array.split(',')
+    if not text and not text_array:
+        raise ValueError("need text or text array")
+    
     delay = params.delay
     font_color = params.font_color
     font_path = params.font_path
@@ -84,22 +86,25 @@ def create_gif(params):
         languages = all_langs
     if any(l not in all_langs for l in languages):
         raise ValueError(f"Invalid lang supplied in following list: {languages}")
+    # Hard-coded width
     width, height = (int(x) for x in params.size.split(','))
     # Create GIF frames
     frames = []
-    trans = get_trans(text, languages=languages)
-    max_width = get_max_width(trans, languages, font_size)
+
+    text_array = get_trans(text, languages=languages) if text else text_array
+
+    max_width = get_max_width(text_array, languages, font_size) if text else width
 
     def create_image(text, font, font_color, background_color):
         image = Image.new("RGB", (max_width, height), color=background_color)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, height/2)
         x = 0
-        y = (height)//4
+        y = height//8
         draw.text((x, y), text, font=font, fill=font_color)
         return image
     
-    for t in trans:
+    for t in text_array:
         image = create_image(
             t, font_path, font_color, background_color,
         )
@@ -120,7 +125,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Create a GIF with customizable parameters"
     )
-    parser.add_argument("--text", required=True, help="The text to display")
+    parser.add_argument("--text", default=None, help="The text to display")
+    parser.add_argument("--text_array", default=None, help="The text to display")
     parser.add_argument(
         "--delay", type=int, default=100, help="Delay between frames in milliseconds"
     )

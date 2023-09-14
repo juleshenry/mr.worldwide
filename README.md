@@ -10,8 +10,9 @@ python3 mr-worldwide.py --size "256,256" --text hello! --font_path fonts/arial.t
 Intermediate
 ```
 --round_robin true #true or false
---background-color blue #red,blue,green,etc.
---background-images #list of image paths, stretched to fit box size, must equal number of languages
+--background_color blue #red,blue,green,etc.
+--background_images #list of image paths, stretched to fit box size, must equal number of languages
+--text_array #
 ```
 
 **round-robin-sinosoidal**
