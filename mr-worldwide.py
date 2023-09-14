@@ -1,7 +1,8 @@
 import argparse
 from PIL import Image, ImageDraw, ImageFont
 from argos_hola import get_trans
-
+from collections import defaultdict
+import argostranslate.apis
 """
 ############################################
 ############################################
@@ -55,37 +56,40 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 """
 
-
+lang_fudge =  {'ja': 4.2,'ko': 4}
 
 def create_gif(params):
+    # PARAMS INPUT
     text = params.text
     delay = params.delay
     font_color = params.font_color
     font_path = params.font_path
     background_color = params.background_color
     font_size = params.font_size
-
+    languages = params.languages
+    all_langs = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+    if languages == ['all']:
+        languages = all_langs
+    if any(l not in all_langs for l in languages):
+        raise ValueError(f"Invalid lang supplied in following list: {languages}")
     width, height = (int(x) for x in params.size.split(','))
-    if params.languages == ['all']:
-        params.languages = None
-
     # Create GIF frames
     frames = []
-    trans = get_trans(text, languages=params.languages)
-    max_width = max(len(s)*font_size for s in trans)
-
-    def create_image(text, font, font_color, font_size, background_color, width, height):
-        image = Image.new("RGB", (width, height), color=background_color)
+    trans = get_trans(text, languages=languages)
+    max_width = int(max(len(t)*lang_fudge.get(l, 2.1) for t,l in zip(trans,languages))) * font_size
+    print(max_width)
+    def create_image(text, font, font_color, font_size, background_color):
+        image = Image.new("RGB", (max_width, height), color=background_color)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, height/2)
-        x = (width - font_size*max_width//2) // 2
-        y = (height - font_size) // 2
+        x = 0
+        y = (height - font_size * 1.5) // 2
         draw.text((x, y), text, font=font, fill=font_color)
         return image
     
     for t in trans:
         image = create_image(
-            t, font_path, font_color, font_size, background_color, max_width, height
+            t, font_path, font_color, font_size, background_color,
         )
         # Overlay the background_image onto the image here
         frames.append(image)
