@@ -58,6 +58,18 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 lang_fudge =  {'ja': 4.2,'ko': 4}
 
+def get_max_width(trans, languages, font_size) -> int:
+    """
+    estimates from language-specific fudge how big the strings will be in the GIF
+    """
+    mx = 0
+    for t,l in zip(trans,languages):
+        adj_len = len(t) * lang_fudge.get(l, 2.1) * font_size
+        print(t)
+        print(l, adj_len)
+        mx = (adj_len if mx<adj_len else mx)
+    return int(mx)
+    
 def create_gif(params):
     # PARAMS INPUT
     text = params.text
@@ -68,7 +80,7 @@ def create_gif(params):
     font_size = params.font_size
     languages = params.languages
     all_langs = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-    if languages == ['all']:
+    if 'all' in languages:
         languages = all_langs
     if any(l not in all_langs for l in languages):
         raise ValueError(f"Invalid lang supplied in following list: {languages}")
@@ -76,20 +88,20 @@ def create_gif(params):
     # Create GIF frames
     frames = []
     trans = get_trans(text, languages=languages)
-    max_width = int(max(len(t)*lang_fudge.get(l, 2.1) for t,l in zip(trans,languages))) * font_size
-    print(max_width)
-    def create_image(text, font, font_color, font_size, background_color):
+    max_width = get_max_width(trans, languages, font_size)
+
+    def create_image(text, font, font_color, background_color):
         image = Image.new("RGB", (max_width, height), color=background_color)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, height/2)
         x = 0
-        y = (height - font_size * 1.5) // 2
+        y = (height)//4
         draw.text((x, y), text, font=font, fill=font_color)
         return image
     
     for t in trans:
         image = create_image(
-            t, font_path, font_color, font_size, background_color,
+            t, font_path, font_color, background_color,
         )
         # Overlay the background_image onto the image here
         frames.append(image)

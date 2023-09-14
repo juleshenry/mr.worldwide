@@ -21,22 +21,18 @@ def from_to_text(from_code,to_code,text):
         tt = argostranslate.translate.translate(text, from_code, to_code)
     except IndexError as ie:
         return None
-    print(to_code, len(tt), tt)
+    # print(to_code, len(tt), tt)
     return tt
-    # except:
-    #     return None
 
 def get_trans(text, languages=None):
     '''
     languages must be a list of 
     '''
-    
     from_code = "en"
-    trans =[]
+    trans =[text]
     for to_code in languages:
         if to_code == from_code:continue
         if text!=(u:=from_to_text(from_code,to_code,text)) and u:
-            # print(u)
             trans+=[u.replace('*','').replace('.',''.replace('!',''))]
     return trans
 
