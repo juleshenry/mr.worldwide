@@ -77,6 +77,7 @@ def create_gif(params):
         raise ValueError("need text or text array")
     
     delay = params.delay
+    sine_delay = params.sine_delay
     font_color = params.font_color
     font_path = params.font_path
     background_color = params.background_color
@@ -87,6 +88,7 @@ def create_gif(params):
         languages = all_langs
     if any(l not in all_langs for l in languages):
         raise ValueError(f"Invalid lang supplied in following list: {languages}")
+    
     # Hard-coded width
     width, height = (int(x) for x in params.size.split(','))
     # Create GIF frames
@@ -111,14 +113,18 @@ def create_gif(params):
         )
         # Overlay the background_image onto the image here
         frames.append(image)
-    # Save the frames as a GIF
-    frames[0].save(
-        params.gif_path,
-        save_all=True,
-        append_images=frames[1:],
-        loop=0,  # 0 means infinite loop
-        duration=delay,  # Time in milliseconds between frames
-    )
+    print(sine_delay)
+    if not sine_delay:
+        # Save the frames as a GIF
+        frames[0].save(
+            params.gif_path,
+            save_all=True,
+            append_images=frames[1:],
+            loop=0,  # 0 means infinite loop
+            duration=delay,  # Time in milliseconds between frames
+        )
+    else:
+        raise ValueError("not implemented yet!")
     print(f"GIF created as {params.gif_path}!")
 
 
@@ -130,6 +136,9 @@ def main():
     parser.add_argument("--text_array", default=None, help="The text to display")
     parser.add_argument(
         "--delay", type=int, default=100, help="Delay between frames in milliseconds"
+    )
+    parser.add_argument(
+        "--sine_delay", type=int, default=0, help="If zero, ignored. Else, focuses on each frame for sine_delay seconds, round-robin"
     )
     parser.add_argument(
         "--font_size", type=int, default=32, help="Delay between frames in milliseconds"
