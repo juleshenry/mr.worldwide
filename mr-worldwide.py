@@ -121,7 +121,7 @@ def create_gif(params):
             save_all=True,
             append_images=frames[1:],
             loop=0,  # 0 means infinite loop
-            duration=delay,  # Time in milliseconds between frames
+            duration=[delay for d in range(len(frames) - 1)],  # Time in milliseconds between frames
         )
     else:
         raise ValueError("not implemented yet!")
