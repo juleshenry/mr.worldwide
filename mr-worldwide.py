@@ -71,7 +71,8 @@ def get_max_width(trans, languages, font_size) -> int:
 def create_gif(params):
     # PARAMS INPUT
     text = params.text
-    text_array = params.text_array.split(',')
+    if params.text_array:
+        text_array = params.text_array.split(',')
     if not text and not text_array:
         raise ValueError("need text or text array")
     
