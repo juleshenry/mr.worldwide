@@ -143,14 +143,14 @@ def main():
         "--font_size", type=int, default=32, help="Delay between frames in milliseconds"
     )
     parser.add_argument(
-        "--font_color", type=str,required=True, help="Font color (R,G,B)"
+        "--font_color", type=str, default="256,256,256", help="Font color (R,G,B)"
     )
-    parser.add_argument("--font_path", required=True, help="Path to the font file")
+    parser.add_argument("--font_path", default="fonts/arial.ttf", help="Path to the font file")
     parser.add_argument(
         "--background_color", type=str, default="0,0,0", help="Background color (R,G,B)"
     )
     parser.add_argument("--size", type=str, default="256,256", help="Image width")
-    parser.add_argument("--gif_path", default=f"output.gif", help="Path to save the output GIF")
+    parser.add_argument("--gif_path", default="output.gif", help="Path to save the output GIF")
     parser.add_argument("--languages", nargs='+', default="all", help="two letter code listˀ")
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
