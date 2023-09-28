@@ -123,7 +123,24 @@ def create_gif(params):
             duration=delay,  # Time in milliseconds between frames
         )
     else:
-        raise ValueError("not implemented yet!")
+        print('SINE:'+str(sine_delay)+', DELAY:'+str(delay))
+         # Save the frames as a GIF
+        new_frames = []
+        for robin in range(len(frames)):
+            for pre in frames[0:robin]:
+                new_frames.append(post)
+            for sine in range(sine_delay//delay):
+                new_frames.append(frames[robin])
+            for post in frames[robin+1:]:
+                new_frames.append(post)
+            
+        frames[0].save(
+            params.gif_path,
+            save_all=True,
+            append_images=new_frames,
+            loop=0,  # 0 means infinite loop
+            duration=delay,  # Time in milliseconds between frames
+        )
     print(f"GIF created as {params.gif_path}!")
 
 
