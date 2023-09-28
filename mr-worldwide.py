@@ -106,7 +106,7 @@ def create_gif(params):
         y = height//8
         draw.text((x, y), text, font=font, fill=font_color)
         return image
-    
+    x= Image.new("RGB",(4,4,),color=(0,0,0,)).save()
     for t in text_array:
         image = create_image(
             t, font_path, font_color, background_color,
