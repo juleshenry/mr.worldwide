@@ -106,14 +106,13 @@ def create_gif(params):
         y = height//8
         draw.text((x, y), text, font=font, fill=font_color)
         return image
-    x= Image.new("RGB",(4,4,),color=(0,0,0,)).save()
+    # x= Image.new("RGB",(4,4,),color=(0,0,0,)).save()
     for t in text_array:
         image = create_image(
             t, font_path, font_color, background_color,
         )
         # Overlay the background_image onto the image here
         frames.append(image)
-    print(sine_delay)
     if not sine_delay:
         # Save the frames as a GIF
         frames[0].save(
@@ -121,7 +120,7 @@ def create_gif(params):
             save_all=True,
             append_images=frames[1:],
             loop=0,  # 0 means infinite loop
-            duration=[delay for d in range(len(frames) - 1)],  # Time in milliseconds between frames
+            duration=delay,  # Time in milliseconds between frames
         )
     else:
         raise ValueError("not implemented yet!")
