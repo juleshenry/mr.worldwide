@@ -1,6 +1,6 @@
 # mister-worldwide
 Consumes a single word. Produces a gif of that word translating between many languages.
-![Alt text](output.gif)
+![Hello, Mr. Worldwide!](/output.gif)
 
 Basic 
 
