@@ -149,7 +149,7 @@ def sine_adder(f: List, d: int):
     for robin in range(len(f)):
         # each iteration requires 0 -> i-1
         for pre in f[0:robin]:
-            f.append(post)
+            f.append(pre)
         # stuff up
         for _ in range(d):
             nf.append(f[robin])
