@@ -3,6 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 from argos_hola import get_trans
 from collections import defaultdict
 import argostranslate.apis
+from typing import List
 """
 ############################################
 ############################################
@@ -125,15 +126,7 @@ def create_gif(params):
     else:
         print('SINE:'+str(sine_delay)+', DELAY:'+str(delay))
          # Save the frames as a GIF
-        new_frames = []
-        for robin in range(len(frames)):
-            for pre in frames[0:robin]:
-                new_frames.append(post)
-            for sine in range(sine_delay//delay):
-                new_frames.append(frames[robin])
-            for post in frames[robin+1:]:
-                new_frames.append(post)
-            
+        new_frames = sine_adder(frames)          
         frames[0].save(
             params.gif_path,
             save_all=True,
@@ -143,6 +136,14 @@ def create_gif(params):
         )
     print(f"GIF created as {params.gif_path}!")
 
+def sine_adder(f:List):
+    for robin in range(len(frames)):
+        for pre in frames[0:robin]:
+            new_frames.append(post)
+        for _ in range(sine_delay//delay):
+            new_frames.append(frames[robin])
+        for post in frames[robin+1:]:
+            new_frames.append(post)
 
 def main():
     parser = argparse.ArgumentParser(
