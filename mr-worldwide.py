@@ -4,6 +4,7 @@ from argos_hola import get_trans
 from collections import defaultdict
 import argostranslate.apis
 from typing import List
+
 """
 ############################################
 ############################################
@@ -57,26 +58,28 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 """
 
-lang_fudge =  {'ja': 4.2,'ko': 4}
+lang_fudge = {"ja": 4.2, "ko": 4}
+
 
 def get_max_width(trans, languages, font_size) -> int:
     """
     estimates from language-specific fudge how big the strings will be in the GIF
     """
     mx = 0
-    for t,l in zip(trans,languages):
+    for t, l in zip(trans, languages):
         adj_len = len(t) * lang_fudge.get(l, 2.1) * font_size
-        mx = (adj_len if mx<adj_len else mx)
+        mx = adj_len if mx < adj_len else mx
     return int(mx)
-    
+
+
 def create_gif(params):
     # PARAMS INPUT
     text = params.text
     if params.text_array:
-        text_array = params.text_array.split(',')
+        text_array = params.text_array.split(",")
     if not text and not text_array:
         raise ValueError("need text or text array")
-    
+
     delay = params.delay
     sine_delay = params.sine_delay
     font_color = params.font_color
@@ -84,14 +87,14 @@ def create_gif(params):
     background_color = params.background_color
     font_size = params.font_size
     languages = params.languages
-    all_langs = [x['code'] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-    if 'all' in languages:
+    all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+    if "all" in languages:
         languages = all_langs
     if any(l not in all_langs for l in languages):
         raise ValueError(f"Invalid lang supplied in following list: {languages}")
-    
+
     # Hard-coded width
-    width, height = (int(x) for x in params.size.split(','))
+    width, height = (int(x) for x in params.size.split(","))
     # Create GIF frames
     frames = []
 
@@ -102,15 +105,19 @@ def create_gif(params):
     def create_image(text, font, font_color, background_color):
         image = Image.new("RGB", (max_width, height), color=background_color)
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype(font, height/2)
+        font = ImageFont.truetype(font, height / 2)
         x = 0
-        y = height//8
+        y = height // 8
         draw.text((x, y), text, font=font, fill=font_color)
         return image
+
     # x= Image.new("RGB",(4,4,),color=(0,0,0,)).save()
     for t in text_array:
         image = create_image(
-            t, font_path, font_color, background_color,
+            t,
+            font_path,
+            font_color,
+            background_color,
         )
         # Overlay the background_image onto the image here
         frames.append(image)
@@ -124,9 +131,9 @@ def create_gif(params):
             duration=delay,  # Time in milliseconds between frames
         )
     else:
-        print('SINE:'+str(sine_delay)+', DELAY:'+str(delay))
-         # Save the frames as a GIF
-        new_frames = sine_adder(frames)          
+        print("SINE:" + str(sine_delay) + ", DELAY:" + str(delay))
+        # Save the frames as a GIF
+        new_frames = sine_adder(frames, sine_delay // delay)
         frames[0].save(
             params.gif_path,
             save_all=True,
@@ -136,14 +143,18 @@ def create_gif(params):
         )
     print(f"GIF created as {params.gif_path}!")
 
-def sine_adder(f:List):
-    for robin in range(len(frames)):
-        for pre in frames[0:robin]:
-            new_frames.append(post)
-        for _ in range(sine_delay//delay):
-            new_frames.append(frames[robin])
-        for post in frames[robin+1:]:
-            new_frames.append(post)
+
+def sine_adder(f: List, d: int):
+    nf = []
+    for robin in range(len(f)):
+        for pre in f[0:robin]:
+            f.append(post)
+        for _ in range(d):
+            nf.append(f[robin])
+        for post in f[robin + 1 :]:
+            nf.append(post)
+    return nf
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -155,7 +166,10 @@ def main():
         "--delay", type=int, default=100, help="Delay between frames in milliseconds"
     )
     parser.add_argument(
-        "--sine_delay", type=int, default=0, help="If zero, ignored. Else, focuses on each frame for sine_delay seconds, round-robin"
+        "--sine_delay",
+        type=int,
+        default=0,
+        help="If zero, ignored. Else, focuses on each frame for sine_delay seconds, round-robin",
     )
     parser.add_argument(
         "--font_size", type=int, default=32, help="Delay between frames in milliseconds"
@@ -163,17 +177,26 @@ def main():
     parser.add_argument(
         "--font_color", type=str, default="256,256,256", help="Font color (R,G,B)"
     )
-    parser.add_argument("--font_path", default="fonts/arial.ttf", help="Path to the font file")
+    parser.add_argument(
+        "--font_path", default="fonts/arial.ttf", help="Path to the font file"
+    )
     parser.add_argument(
         "--background_color", type=str, default="0,0,0", help="Background color (R,G,B)"
     )
     parser.add_argument("--size", type=str, default="256,256", help="Image width")
-    parser.add_argument("--gif_path", default="output.gif", help="Path to save the output GIF")
-    parser.add_argument("--languages", nargs='+', default="all", help="two letter code listˀ")
+    parser.add_argument(
+        "--gif_path", default="output.gif", help="Path to save the output GIF"
+    )
+    parser.add_argument(
+        "--languages", nargs="+", default="all", help="two letter code listˀ"
+    )
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
     params.background_color = tuple(map(int, params.background_color.split(",")))
     create_gif(params)
 
+
 if __name__ == "__main__":
-     main()
+    #  main()
+    x = sine_adder([1, 2, 3], 6)
+    print(x)
