@@ -147,10 +147,13 @@ def create_gif(params):
 def sine_adder(f: List, d: int):
     nf = []
     for robin in range(len(f)):
+        # each iteration requires 0 -> i-1
         for pre in f[0:robin]:
             f.append(post)
+        # stuff up
         for _ in range(d):
             nf.append(f[robin])
+        # each iteration requires i+1 -> n
         for post in f[robin + 1 :]:
             nf.append(post)
     return nf
@@ -198,5 +201,5 @@ def main():
 
 if __name__ == "__main__":
     #  main()
-    x = sine_adder([1, 2, 3], 6)
+    x = sine_adder([1, 2, 3], 3)
     print(x)
