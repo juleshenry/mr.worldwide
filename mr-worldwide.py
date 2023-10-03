@@ -4,7 +4,7 @@ from argos_hola import get_trans
 from collections import defaultdict
 import argostranslate.apis
 from typing import List
-
+import urllib
 """
 ############################################
 ############################################
@@ -87,11 +87,16 @@ def create_gif(params):
     background_color = params.background_color
     font_size = params.font_size
     languages = params.languages
-    all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-    if "all" in languages:
-        languages = all_langs
-    if any(l not in all_langs for l in languages):
-        raise ValueError(f"Invalid lang supplied in following list: {languages}")
+    try:
+        all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+        if "all" in languages:
+            languages = all_langs
+        if any(l not in all_langs for l in languages):
+            raise ValueError(f"Invalid lang supplied in following list: {languages}")
+    except urllib.error.HTTPError:
+        print('Unable to reach argos server. Translating disabled.')
+
+    
 
     # Hard-coded width
     width, height = (int(x) for x in params.size.split(","))
