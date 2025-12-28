@@ -212,15 +212,15 @@ def create_gif(params):
         for img_path in background_images:
             try:
                 bg_img = Image.open(img_path.strip())
-                # Resize to match the target size
-                bg_img = bg_img.resize((max_width, height))
+                # Resize to match the target size using high-quality resampling
+                bg_img = bg_img.resize((max_width, height), Image.LANCZOS)
                 bg_images.append(bg_img)
-            except Exception as e:
+            except (FileNotFoundError, OSError) as e:
                 print(f"Warning: Could not load background image {img_path}: {e}")
                 bg_images.append(None)
         
         # Ensure we have enough background images (cycle if needed)
-        if len(bg_images) < len(text_array):
+        if bg_images and len(bg_images) < len(text_array):
             while len(bg_images) < len(text_array):
                 bg_images.extend(bg_images[:len(text_array) - len(bg_images)])
 
