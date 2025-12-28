@@ -1,10 +1,18 @@
 import argparse
 from PIL import Image, ImageDraw, ImageFont
-from argos_hola import get_trans
 from collections import defaultdict
-import argostranslate.apis
 from typing import List
 import urllib
+
+# Make argostranslate optional for testing
+try:
+    from argos_hola import get_trans
+    import argostranslate.apis
+    HAS_ARGOS = True
+except ImportError:
+    HAS_ARGOS = False
+    def get_trans(text, languages=None):
+        return [text]
 """
 ############################################
 ############################################
@@ -72,6 +80,20 @@ def get_max_width(trans, languages, font_size) -> int:
     return int(mx)
 
 
+def get_actual_text_width(text, font_path, font_size):
+    """
+    Calculate the actual rendered width of text using PIL's textbbox
+    """
+    font = ImageFont.truetype(font_path, font_size)
+    # Create a temporary draw object to measure text
+    temp_image = Image.new("RGB", (1, 1))
+    draw = ImageDraw.Draw(temp_image)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    # bbox returns (left, top, right, bottom)
+    text_width = bbox[2] - bbox[0]
+    return text_width
+
+
 def create_gif(params):
     # PARAMS INPUT
     text = params.text
@@ -87,14 +109,20 @@ def create_gif(params):
     background_color = params.background_color
     font_size = params.font_size
     languages = params.languages
-    try:
-        all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-        if "all" in languages:
-            languages = all_langs
-        if any(l not in all_langs for l in languages):
-            raise ValueError(f"Invalid lang supplied in following list: {languages}")
-    except urllib.error.HTTPError:
-        print('Unable to reach argos server. Translating disabled.')
+    
+    if HAS_ARGOS:
+        try:
+            all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+            if "all" in languages:
+                languages = all_langs
+            if any(l not in all_langs for l in languages):
+                raise ValueError(f"Invalid lang supplied in following list: {languages}")
+        except urllib.error.HTTPError:
+            print('Unable to reach argos server. Translating disabled.')
+    else:
+        if text:
+            print('argostranslate not available. Translations disabled.')
+            languages = ['en']
 
     
 
@@ -106,12 +134,25 @@ def create_gif(params):
     text_array = get_trans(text, languages=languages) if text else text_array
 
     max_width = get_max_width(text_array, languages, font_size) if text else width
+    
+    # Calculate actual maximum text width for center alignment
+    actual_font_size = int(height / 2)
+    max_text_width = 0
+    for t in text_array:
+        text_width = get_actual_text_width(t, font_path, actual_font_size)
+        if text_width > max_text_width:
+            max_text_width = text_width
+    
+    # Add padding
+    padding = 20
 
     def create_image(text, font, font_color, background_color):
         image = Image.new("RGB", (max_width, height), color=background_color)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, height / 2)
-        x = 0
+        # Center text based on maximum text width: (max_text_width + padding) / 2
+        text_width = get_actual_text_width(text, font_path, actual_font_size)
+        x = (max_text_width + padding) / 2 - text_width / 2
         y = height // 8
         draw.text((x, y), text, font=font, fill=font_color)
         return image
