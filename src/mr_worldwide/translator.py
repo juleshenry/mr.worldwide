@@ -1,0 +1,175 @@
+import argostranslate.package
+import argostranslate.translate
+import argostranslate.apis
+import urllib.error
+from typing import List, Optional, Dict, Tuple
+from abc import ABC, abstractmethod
+from .logger import get_logger
+
+logger = get_logger(__name__)
+
+class BaseTranslator(ABC):
+    """Abstract base class for translation providers"""
+
+    @abstractmethod
+    def translate(self, text: str, from_lang: str, to_lang: str) -> Optional[str]:
+        """Translate text from one language to another"""
+        pass
+
+    @abstractmethod
+    def get_supported_languages(self) -> List[str]:
+        """Return list of supported language codes"""
+        pass
+
+class ArgosTranslator(BaseTranslator):
+    """Argos Translate implementation"""
+
+    def __init__(self):
+        self.translation_cache: Dict[Tuple[str, str, str], Optional[str]] = {}
+
+    def translate(self, text: str, from_lang: str, to_lang: str) -> Optional[str]:
+        """Translate using Argos Translate"""
+        return self._from_to_text(from_lang, to_lang, text)
+
+    def get_supported_languages(self) -> List[str]:
+        """Get supported languages from Argos"""
+        try:
+            return [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+        except Exception as e:
+            logger.error(f"Error getting supported languages: {e}")
+            return []
+
+    def validate_languages(self, languages: List[str]) -> List[str]:
+        try:
+            all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
+            if "all" in languages or languages == ["all"]:
+                return all_langs
+            
+            if any(l not in all_langs for l in languages):
+                raise ValueError(f"Invalid lang supplied in following list: {languages}")
+            return languages
+        except urllib.error.HTTPError:
+            logger.error('Unable to reach argos server. Translating disabled.')
+            return []
+        except Exception as e:
+            logger.error(f"Error validating languages: {e}")
+            return []
+
+    def _from_to_text(self, from_code: str, to_code: str, text: str) -> Optional[str]:
+        # Check cache first
+        cache_key = (from_code, to_code, text)
+        if cache_key in self.translation_cache:
+            logger.debug(f"Cache hit for translation: {from_code}->{to_code} '{text}'")
+            return self.translation_cache[cache_key]
+
+        # Download and install Argos Translate package
+        try:
+            argostranslate.package.update_package_index()
+            available_packages = argostranslate.package.get_available_packages()
+
+            # FROM 2 TO
+            package_to_install = list(
+                filter(
+                    lambda x: (x.from_code == from_code and x.to_code == to_code),
+                    available_packages,
+                )
+            )[0]
+            argostranslate.package.install_from_path(package_to_install.download())
+            # Translate
+            tt = argostranslate.translate.translate(text, from_code, to_code)
+
+            # Cache the result
+            self.translation_cache[cache_key] = tt
+            logger.debug(f"Cached translation: {from_code}->{to_code} '{text}' -> '{tt}'")
+            return tt
+        except IndexError:
+            logger.warning(f"No translation package found for {from_code}->{to_code}")
+            self.translation_cache[cache_key] = None
+            return None
+        except Exception as e:
+            logger.error(f"Translation error ({from_code}->{to_code}): {e}")
+            self.translation_cache[cache_key] = None
+            return None
+
+
+class GoogleTranslator(BaseTranslator):
+    """Google Translate implementation (placeholder)"""
+
+    def translate(self, text: str, from_lang: str, to_lang: str) -> Optional[str]:
+        """Placeholder for Google Translate API"""
+        logger.warning("Google Translate not implemented yet")
+        return None
+
+    def get_supported_languages(self) -> List[str]:
+        """Placeholder for Google Translate supported languages"""
+        # This would need to query Google Translate API
+        logger.warning("Google Translate languages not implemented yet")
+        return []
+
+
+class DeepLTranslator(BaseTranslator):
+    """DeepL Translate implementation (placeholder)"""
+
+    def translate(self, text: str, from_lang: str, to_lang: str) -> Optional[str]:
+        """Placeholder for DeepL API"""
+        logger.warning("DeepL Translate not implemented yet")
+        return None
+
+    def get_supported_languages(self) -> List[str]:
+        """Placeholder for DeepL supported languages"""
+        logger.warning("DeepL languages not implemented yet")
+        return []
+
+
+class Translator:
+    """Main translator class that can use different providers"""
+
+    def __init__(self, provider: str = "argos"):
+        self.provider = provider.lower()
+        if self.provider == "argos":
+            self.translator = ArgosTranslator()
+        elif self.provider == "google":
+            self.translator = GoogleTranslator()
+        elif self.provider == "deepl":
+            self.translator = DeepLTranslator()
+        else:
+            logger.warning(f"Unknown provider '{provider}', falling back to argos")
+            self.translator = ArgosTranslator()
+
+    def validate_languages(self, languages: List[str]) -> List[str]:
+        try:
+            all_langs = self.translator.get_supported_languages()
+            if "all" in languages or languages == ["all"]:
+                return all_langs
+
+            if any(l not in all_langs for l in languages):
+                raise ValueError(f"Invalid lang supplied in following list: {languages}")
+            return languages
+        except urllib.error.HTTPError:
+            logger.error('Unable to reach translation server. Translating disabled.')
+            return []
+        except Exception as e:
+            logger.error(f"Error validating languages: {e}")
+            return []
+
+    def get_translations(self, text: str, languages: List[str]) -> List[str]:
+        """
+        languages must be a list of language codes
+        """
+        from_code = "en"
+        trans = [text]
+
+        # Validate and expand languages if needed
+        target_languages = self.validate_languages(languages)
+
+        for to_code in target_languages:
+            if to_code == from_code:
+                continue
+
+            translated_text = self.translator.translate(text, from_code, to_code)
+            if translated_text and translated_text != text:
+                # Clean up translation
+                cleaned = translated_text.replace("*", "").replace(".", "").replace("!", "")
+                trans.append(cleaned)
+
+        return trans

@@ -1,0 +1,17 @@
+LICENSE
+README.md
+pyproject.toml
+src/mr_worldwide/__init__.py
+src/mr_worldwide/config.py
+src/mr_worldwide/gif_generator.py
+src/mr_worldwide/logger.py
+src/mr_worldwide/translator.py
+src/mr_worldwide.egg-info/PKG-INFO
+src/mr_worldwide.egg-info/SOURCES.txt
+src/mr_worldwide.egg-info/dependency_links.txt
+src/mr_worldwide.egg-info/entry_points.txt
+src/mr_worldwide.egg-info/requires.txt
+src/mr_worldwide.egg-info/top_level.txt
+tests/test_argos_hola.py
+tests/test_cli_integration.py
+tests/test_mr_worldwide.py

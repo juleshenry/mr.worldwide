@@ -1,5 +1,19 @@
 # mister-worldwide
+
 Consumes a single word. Produces a gif of that word translating between many languages.
+
+## Installation
+
+Install the required dependencies using Poetry:
+
+```bash
+poetry install
+```
+
+For development and testing (includes dev dependencies):
+```bash
+poetry install --with dev
+```
 
 Basic 
 
@@ -21,8 +35,96 @@ python3 mr-worldwide.py --size "256,256" --text hello! --font_path fonts/arial.t
 
 ```
 
+## API
 
+The project includes a REST API for programmatic GIF generation using FastAPI.
 
+### Starting the API Server
+
+```bash
+poetry run uvicorn src.mr_worldwide.web_api:app --host 0.0.0.0 --port 8000
+```
+
+Visit `http://localhost:8000/docs` for interactive API documentation.
+
+### API Endpoints
+
+#### POST `/generate-gif`
+
+Generate a GIF with translated text.
+
+**Parameters:**
+- `text` (optional): Single text to translate
+- `text_array` (optional): Comma-separated list of texts
+- `languages` (default: "all"): Language codes or "all"
+- `provider` (default: "argos"): Translation provider
+- `size` (default: "256,256"): Image dimensions
+- `font_color` (default: "255,255,255"): Font color as RGB
+- `background_color` (default: "0,0,0"): Background color as RGB
+- `delay` (default: 100): Frame delay in ms
+- `animation` (default: "linear"): Animation type
+- `smart_color` (default: false): Auto-contrast font color
+- `tts` (default: false): Generate TTS audio
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/generate-gif" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello", "languages": "es,fr,de"}' \
+  --output hello_translations.gif
+```
+
+## Testing
+
+The project includes comprehensive unit and integration tests using pytest. To run the tests:
+
+### Installation
+
+First, install the development dependencies:
+
+```bash
+poetry install --with dev
+```
+
+### Running Tests
+
+Run all tests:
+```bash
+pytest
+```
+
+Run with verbose output:
+```bash
+pytest -v
+```
+
+Run specific test files:
+```bash
+pytest tests/test_argos_hola.py
+pytest tests/test_mr_worldwide.py
+pytest tests/test_cli_integration.py
+```
+
+### Test Coverage
+
+The test suite covers:
+
+- **Translation functionality** (`tests/test_argos_hola.py`):
+  - `from_to_text()` function with success and error cases
+  - `get_trans()` function with various language configurations
+
+- **Core image generation** (`tests/test_mr_worldwide.py`):
+  - `get_max_width()` for text sizing calculations
+  - `sine_adder()` for animation frame manipulation
+  - Argument parsing and color conversion in `main()`
+  - GIF creation logic in `create_gif()`
+
+- **CLI integration** (`tests/test_cli_integration.py`):
+  - Command-line argument parsing
+  - Error handling for invalid inputs
+  - Help text display
+
+Tests use mocking to avoid dependencies on external services and focus on unit behavior.
 
 ``` TODO
 --round_robin true #true or false

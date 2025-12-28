@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "mr-worldwide"
+version = "0.1.0"
+description = "A tool to generate GIFs with translated text in multiple languages."
+authors = ["Enrique <enrique@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "mr_worldwide"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+Pillow = ">=9.0.0,<11.0.0"
+argostranslate = ">=1.9.0,<2.0.0"
+pydantic = ">=1.8.0,<2.0.0"
+arabic-reshaper = "^3.0.0"
+python-bidi = "^0.4.2"
+pyttsx3 = "^2.90"
+fastapi = "^0.104.0"
+uvicorn = "^0.24.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0.0"
+pytest-mock = ">=3.10.0"
+black = ">=22.0.0"
+isort = ">=5.10.0"
+mypy = ">=0.950"
+
+[tool.poetry.scripts]
+mr-worldwide = "mr_worldwide.mr_worldwide:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true

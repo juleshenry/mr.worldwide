@@ -1,0 +1,21 @@
+[x] Refactor code into modular structure with classes for better organization (e.g., Translator, GifGenerator, Config)
+[x] Add comprehensive type hints throughout the codebase for better IDE support and code clarity
+[x] Implement proper error handling and logging system with configurable log levels
+[x] Add unit tests and integration tests using pytest, covering translation, image generation, and CLI functionality
+[x] Set up pyproject.toml for modern Python packaging, dependencies management, and tool configuration
+[x] Implement parallel processing for translations to speed up GIF generation for many languages
+[x] center text in the middle of gif 
+[x] Add caching system for translations to avoid re-translating the same text multiple times
+[x] Add support for multiple translation providers (Google Translate, DeepL, etc.) as alternatives to Argos
+[x] Implement bidirectional text support for RTL languages like Arabic and Hebrew
+[x] Add more advanced animation effects (easing functions, custom timing curves) beyond current sine wave
+[x] Implement automatic font fallback system and better font rendering for different character sets
+[x] Add support for background images that can change per language or be stretched/fit to frame
+[x] Implement smart color picker that chooses font colors with high contrast against backgrounds
+[x] Add text-to-speech integration to generate audio for each language in the GIF
+[x] Create a simple web API using Flask/FastAPI for programmatic GIF generation
+[x] Add GitHub Actions CI/CD pipeline for automated testing, linting, and releases
+[x] Enhance README with comprehensive documentation, API reference, and animated examples
+[ ] Create Docker container for easy deployment and consistent environment across platforms
+[ ] Add interactive CLI mode with prompts for easier usage without remembering all parameters
+[ ] Implement offline mode that works with pre-downloaded Argos translation packages
