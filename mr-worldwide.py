@@ -68,9 +68,6 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 lang_fudge = {"ja": 4.2, "ko": 4}
 
-# Padding for center alignment calculation
-TEXT_CENTER_PADDING = 20
-
 
 def get_max_width(trans, languages, font_size) -> int:
     """
@@ -144,8 +141,9 @@ def create_gif(params):
     max_text_width = 0
     text_widths = {}  # Cache text widths to avoid redundant calculations
     for t in text_array:
-        text_width = get_actual_text_width(t, font_path, actual_font_size)
-        text_widths[t] = text_width
+        if t not in text_widths:  # Avoid recalculating for duplicate text
+            text_widths[t] = get_actual_text_width(t, font_path, actual_font_size)
+        text_width = text_widths[t]
         if text_width > max_text_width:
             max_text_width = text_width
 
@@ -153,9 +151,9 @@ def create_gif(params):
         image = Image.new("RGB", (max_width, height), color=background_color)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, height / 2)
-        # Center text based on maximum text width: (max_text_width + padding) / 2
+        # Center text within the image canvas
         text_width = text_widths[text]  # Use cached width
-        x = (max_text_width + TEXT_CENTER_PADDING) / 2 - text_width / 2
+        x = max_width / 2 - text_width / 2
         y = height // 8
         draw.text((x, y), text, font=font, fill=font_color)
         return image
