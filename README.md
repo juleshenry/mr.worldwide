@@ -4,7 +4,9 @@ Consumes a single word. Produces a gif of that word translating between many lan
 
 ## Installation
 
-Install the required dependencies using Poetry:
+### Using Poetry
+
+Install the required dependencies:
 
 ```bash
 poetry install
@@ -14,6 +16,23 @@ For development and testing (includes dev dependencies):
 ```bash
 poetry install --with dev
 ```
+
+### Using Docker
+
+Build and run with Docker:
+
+```bash
+docker build -t mister-worldwide .
+docker run -p 8000:8000 mister-worldwide
+```
+
+Or using Docker Compose:
+
+```bash
+docker-compose up
+```
+
+The API will be available at `http://localhost:8000`.
 
 Basic 
 

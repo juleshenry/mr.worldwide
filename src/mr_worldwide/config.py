@@ -11,6 +11,8 @@ class Config:
     animation: str
     smart_color: bool
     tts: bool
+    interactive: bool
+    offline: bool
     font_size: int
     font_color: Tuple[int, ...]
     font_path: str
@@ -76,6 +78,12 @@ class Config:
         parser.add_argument(
             "--tts", action="store_true", help="Generate text-to-speech audio files for each language"
         )
+        parser.add_argument(
+            "--interactive", "-i", action="store_true", help="Run in interactive mode with prompts"
+        )
+        parser.add_argument(
+            "--offline", action="store_true", help="Run in offline mode (requires pre-downloaded translation packages)"
+        )
         
         args = parser.parse_args()
         
@@ -102,5 +110,7 @@ class Config:
             provider=args.provider,
             animation=args.animation,
             smart_color=args.smart_color,
-            tts=args.tts
+            tts=args.tts,
+            interactive=args.interactive,
+            offline=args.offline
         )

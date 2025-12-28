@@ -16,6 +16,6 @@
 [x] Create a simple web API using Flask/FastAPI for programmatic GIF generation
 [x] Add GitHub Actions CI/CD pipeline for automated testing, linting, and releases
 [x] Enhance README with comprehensive documentation, API reference, and animated examples
-[ ] Create Docker container for easy deployment and consistent environment across platforms
-[ ] Add interactive CLI mode with prompts for easier usage without remembering all parameters
-[ ] Implement offline mode that works with pre-downloaded Argos translation packages
+[x] Create Docker container for easy deployment and consistent environment across platforms
+[x] Add interactive CLI mode with prompts for easier usage without remembering all parameters
+[x] Implement offline mode that works with pre-downloaded Argos translation packages

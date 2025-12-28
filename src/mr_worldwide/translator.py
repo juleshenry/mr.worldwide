@@ -24,8 +24,9 @@ class BaseTranslator(ABC):
 class ArgosTranslator(BaseTranslator):
     """Argos Translate implementation"""
 
-    def __init__(self):
+    def __init__(self, offline: bool = False):
         self.translation_cache: Dict[Tuple[str, str, str], Optional[str]] = {}
+        self.offline = offline
 
     def translate(self, text: str, from_lang: str, to_lang: str) -> Optional[str]:
         """Translate using Argos Translate"""
@@ -61,6 +62,12 @@ class ArgosTranslator(BaseTranslator):
         if cache_key in self.translation_cache:
             logger.debug(f"Cache hit for translation: {from_code}->{to_code} '{text}'")
             return self.translation_cache[cache_key]
+
+        # In offline mode, don't try to download packages
+        if self.offline:
+            logger.warning(f"Offline mode: skipping translation {from_code}->{to_code}")
+            self.translation_cache[cache_key] = None
+            return None
 
         # Download and install Argos Translate package
         try:
@@ -124,17 +131,17 @@ class DeepLTranslator(BaseTranslator):
 class Translator:
     """Main translator class that can use different providers"""
 
-    def __init__(self, provider: str = "argos"):
+    def __init__(self, provider: str = "argos", offline: bool = False):
         self.provider = provider.lower()
         if self.provider == "argos":
-            self.translator = ArgosTranslator()
+            self.translator = ArgosTranslator(offline=offline)
         elif self.provider == "google":
             self.translator = GoogleTranslator()
         elif self.provider == "deepl":
             self.translator = DeepLTranslator()
         else:
             logger.warning(f"Unknown provider '{provider}', falling back to argos")
-            self.translator = ArgosTranslator()
+            self.translator = ArgosTranslator(offline=offline)
 
     def validate_languages(self, languages: List[str]) -> List[str]:
         try:
