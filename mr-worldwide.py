@@ -61,6 +61,10 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 
 lang_fudge = {"ja": 4.2, "ko": 4}
 
+# Color picker constants
+CAMOUFLAGE_VARIATION = 25  # Pixel value variation for camouflage effect
+LUMINANCE_THRESHOLD = 0.5  # Threshold for determining bright vs dark backgrounds
+
 
 def get_luminance(rgb: Tuple[int, int, int]) -> float:
     """
@@ -138,21 +142,18 @@ def get_camouflaged_color(bg_color: Tuple[int, int, int]) -> Tuple[int, int, int
     """
     r, g, b = bg_color
     
-    # Add slight variation to avoid complete invisibility
-    variation = 25
-    
     # Adjust based on luminance - darker backgrounds get lighter text, vice versa
     lum = get_luminance(bg_color)
-    if lum > 0.5:
+    if lum > LUMINANCE_THRESHOLD:
         # Bright background - make text slightly darker
-        r = max(0, r - variation)
-        g = max(0, g - variation)
-        b = max(0, b - variation)
+        r = max(0, r - CAMOUFLAGE_VARIATION)
+        g = max(0, g - CAMOUFLAGE_VARIATION)
+        b = max(0, b - CAMOUFLAGE_VARIATION)
     else:
         # Dark background - make text slightly lighter
-        r = min(255, r + variation)
-        g = min(255, g + variation)
-        b = min(255, b + variation)
+        r = min(255, r + CAMOUFLAGE_VARIATION)
+        g = min(255, g + CAMOUFLAGE_VARIATION)
+        b = min(255, b + CAMOUFLAGE_VARIATION)
     
     return (r, g, b)
 
