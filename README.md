@@ -34,23 +34,23 @@ docker-compose up
 
 The API will be available at `http://localhost:8000`.
 
-Basic 
+Basic
 
 ```
-python3 mr-worldwide.py --size "256,256" --text hello! --font_path fonts/arial.ttf --font_color "256,32,32" --background_color "256,256,256" --languages all --delay 300
+python3 mr-worldwide.py --offline --size "256,256" --text hello! --font_path fonts/arial.ttf --font_color "256,32,32" --background_color "256,256,256" --languages all --delay 300
 ```
 
 Intermediate Examples
 ```
 TEXT ARRAY:
 
-python3 mr-worldwide.py --size "1024,256" --text_array "你好, Hola, Hello, नमस्ते, السلام عليكم, হ্যালো, Olá, Привет, こんにちは, ਸਤ ਸ੍ਰੀ ਅਕਾਲ, Hallo, Halo, 呵呵, హలో, Xin chào, नमस्कार, 안녕하세요, Bonjour, வணக்கம், Merhaba, اسلام و علیکم, 哈囉, สวัสดี, નમસ્તે, Pronto" --font_path fonts/arial.ttf --font_color "0,0,0" --font_size=32 --background_color "256,256,256" --languages all --delay 300
+python3 mr-worldwide.py --offline --size "1024,256" --text_array "你好, Hola, Hello, नमस्ते, السلام عليكم, হ্যালো, Olá, Привет, こんにちは, ਸਤ ਸ੍ਰੀ ਅਕਾਲ, Hallo, Halo, 呵呵, హలో, Xin chào, नमस्कार, 안녕하세요, Bonjour, வணக்கம், Merhaba, اسلام و علیکم, 哈囉, สวัสดี, નમસ્તે, Pronto" --font_path fonts/arial.ttf --font_color "0,0,0" --font_size=32 --background_color "256,256,256" --languages all --delay 300
 ```
 
 ```
 SINUSOIDAL:
 
-python3 mr-worldwide.py --size "256,256" --text hello! --font_path fonts/arial.ttf --font_color "256,32,32" --background_color "256,256,256" --languages all --delay sine:"500,100" 
+python3 mr-worldwide.py --offline --size "256,256" --text hello! --font_path fonts/arial.ttf --font_color "256,32,32" --background_color "256,256,256" --languages all --delay sine:"500,100"
 
 ```
 
@@ -84,6 +84,8 @@ Generate a GIF with translated text.
 - `animation` (default: "linear"): Animation type
 - `smart_color` (default: false): Auto-contrast font color
 - `tts` (default: false): Generate TTS audio
+
+**Note:** If using the default "argos" provider without an API key for LibreTranslate, translations may fail. Consider using offline mode or setting up an API key.
 
 **Example:**
 ```bash

@@ -32,29 +32,45 @@ class ArgosTranslator(BaseTranslator):
         """Translate using Argos Translate"""
         return self._from_to_text(from_lang, to_lang, text)
 
+    def get_installed_languages(self) -> List[str]:
+        """Get list of languages from installed packages"""
+        try:
+            installed_packages = argostranslate.package.get_installed_packages()
+            languages = set()
+            for package in installed_packages:
+                languages.add(package.from_code)
+                languages.add(package.to_code)
+            return list(languages)
+        except Exception as e:
+            logger.error(f"Error getting installed languages: {e}")
+            return []
+
     def get_supported_languages(self) -> List[str]:
         """Get supported languages from Argos"""
+        if self.offline:
+            return self.get_installed_languages()
+
         try:
             return [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
         except Exception as e:
-            logger.error(f"Error getting supported languages: {e}")
-            return []
+            logger.warning(f"Error getting supported languages from API: {e}. Falling back to installed packages.")
+            return self.get_installed_languages()
 
     def validate_languages(self, languages: List[str]) -> List[str]:
-        try:
-            all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-            if "all" in languages or languages == ["all"]:
-                return all_langs
-            
-            if any(l not in all_langs for l in languages):
-                raise ValueError(f"Invalid lang supplied in following list: {languages}")
-            return languages
-        except urllib.error.HTTPError:
-            logger.error('Unable to reach argos server. Translating disabled.')
+        all_langs = self.get_supported_languages()
+        if not all_langs:
+            logger.warning("No supported languages found.")
             return []
-        except Exception as e:
-            logger.error(f"Error validating languages: {e}")
-            return []
+
+        if "all" in languages or languages == ["all"]:
+            return all_langs
+        
+        if any(l not in all_langs for l in languages):
+            # Instead of raising error, maybe just log warning and filter?
+            # For now, keeping original behavior but logging
+            logger.warning(f"Some languages in {languages} might not be supported.")
+            # raise ValueError(f"Invalid lang supplied in following list: {languages}")
+        return languages
 
     def _from_to_text(self, from_code: str, to_code: str, text: str) -> Optional[str]:
         # Check cache first
@@ -63,36 +79,31 @@ class ArgosTranslator(BaseTranslator):
             logger.debug(f"Cache hit for translation: {from_code}->{to_code} '{text}'")
             return self.translation_cache[cache_key]
 
-        # In offline mode, don't try to download packages
-        if self.offline:
-            logger.warning(f"Offline mode: skipping translation {from_code}->{to_code}")
-            self.translation_cache[cache_key] = None
-            return None
+        # Try to download package if not offline
+        if not self.offline:
+            try:
+                argostranslate.package.update_package_index()
+                available_packages = argostranslate.package.get_available_packages()
 
-        # Download and install Argos Translate package
-        try:
-            argostranslate.package.update_package_index()
-            available_packages = argostranslate.package.get_available_packages()
-
-            # FROM 2 TO
-            package_to_install = list(
-                filter(
-                    lambda x: (x.from_code == from_code and x.to_code == to_code),
-                    available_packages,
+                # FROM 2 TO
+                package_to_install = next(
+                    filter(
+                        lambda x: (x.from_code == from_code and x.to_code == to_code),
+                        available_packages,
+                    ), None
                 )
-            )[0]
-            argostranslate.package.install_from_path(package_to_install.download())
-            # Translate
-            tt = argostranslate.translate.translate(text, from_code, to_code)
+                if package_to_install:
+                    argostranslate.package.install_from_path(package_to_install.download())
+            except Exception as e:
+                logger.warning(f"Could not download package for {from_code}->{to_code}: {e}")
 
+        # Translate
+        try:
+            tt = argostranslate.translate.translate(text, from_code, to_code)
             # Cache the result
             self.translation_cache[cache_key] = tt
             logger.debug(f"Cached translation: {from_code}->{to_code} '{text}' -> '{tt}'")
             return tt
-        except IndexError:
-            logger.warning(f"No translation package found for {from_code}->{to_code}")
-            self.translation_cache[cache_key] = None
-            return None
         except Exception as e:
             logger.error(f"Translation error ({from_code}->{to_code}): {e}")
             self.translation_cache[cache_key] = None

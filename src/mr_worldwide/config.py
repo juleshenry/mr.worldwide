@@ -32,7 +32,7 @@ class Config:
         parser.add_argument("--text", default=None, help="The text to display")
         parser.add_argument("--text_array", default=None, help="The text to display")
         parser.add_argument(
-            "--delay", type=int, default=100, help="Delay between frames in milliseconds"
+            "--delay", type=str, default="100", help="Delay between frames in milliseconds, or 'sine:delay,sine_delay' for sine animation"
         )
         parser.add_argument(
             "--sine_delay",
@@ -86,12 +86,20 @@ class Config:
         )
         
         args = parser.parse_args()
-        
+
         # Process arguments
         text_array = args.text_array.split(",") if args.text_array else None
         font_color = tuple(map(int, args.font_color.split(",")))
         background_color = tuple(map(int, args.background_color.split(",")))
         size = tuple(map(int, args.size.split(",")))
+
+        # Parse delay
+        if args.delay.startswith("sine:"):
+            parts = args.delay.split(":")[1].split(",")
+            args.delay = int(parts[1])
+            args.sine_delay = int(parts[0])
+        else:
+            args.delay = int(args.delay)
         
         return cls(
             text=args.text,
