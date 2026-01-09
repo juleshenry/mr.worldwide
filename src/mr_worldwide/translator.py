@@ -45,6 +45,16 @@ class ArgosTranslator(BaseTranslator):
             logger.error(f"Error getting installed languages: {e}")
             return []
 
+    def get_installed_targets(self, from_code: str) -> List[str]:
+        """Return target language codes that are installed for a given source language."""
+        try:
+            installed_packages = argostranslate.package.get_installed_packages()
+            targets = {p.to_code for p in installed_packages if p.from_code == from_code}
+            return sorted(targets)
+        except Exception as e:
+            logger.error(f"Error getting installed translation targets for '{from_code}': {e}")
+            return []
+
     def get_supported_languages(self) -> List[str]:
         """Get supported languages from Argos"""
         if self.offline:
@@ -155,20 +165,13 @@ class Translator:
             self.translator = ArgosTranslator(offline=offline)
 
     def validate_languages(self, languages: List[str]) -> List[str]:
-        try:
-            all_langs = self.translator.get_supported_languages()
-            if "all" in languages or languages == ["all"]:
-                return all_langs
+        all_langs = self.translator.get_supported_languages()
+        if "all" in languages or languages == ["all"]:
+            return all_langs
 
-            if any(l not in all_langs for l in languages):
-                raise ValueError(f"Invalid lang supplied in following list: {languages}")
-            return languages
-        except urllib.error.HTTPError:
-            logger.error('Unable to reach translation server. Translating disabled.')
-            return []
-        except Exception as e:
-            logger.error(f"Error validating languages: {e}")
-            return []
+        if any(l not in all_langs for l in languages):
+            raise ValueError(f"Invalid lang supplied in following list: {languages}")
+        return languages
 
     def get_translations(self, text: str, languages: List[str]) -> List[str]:
         """
@@ -178,16 +181,43 @@ class Translator:
         trans = [text]
 
         # Validate and expand languages if needed
-        target_languages = self.validate_languages(languages)
+        try:
+            target_languages = self.validate_languages(languages)
+        except urllib.error.HTTPError:
+            logger.error("Unable to reach translation server. Translating disabled.")
+            target_languages = []
+
+        # In offline Argos mode, "all" should mean "all installed en->X targets",
+        # not "all language codes seen in packages".
+        if ("all" in languages or languages == ["all"]) and isinstance(self.translator, ArgosTranslator) and self.translator.offline:
+            target_languages = self.translator.get_installed_targets(from_code)
+
+        if not target_languages and languages:
+            raise ValueError(
+                "No target languages available for translation. "
+                "If you're using --offline, you must install Argos translation packages (e.g. en->es) first."
+            )
+
+        failures = 0
+        attempted = 0
 
         for to_code in target_languages:
             if to_code == from_code:
                 continue
 
+            attempted += 1
             translated_text = self.translator.translate(text, from_code, to_code)
             if translated_text and translated_text != text:
                 # Clean up translation
                 cleaned = translated_text.replace("*", "").replace(".", "").replace("!", "")
                 trans.append(cleaned)
+            else:
+                failures += 1
+
+        if attempted > 0 and len(trans) == 1:
+            logger.warning(
+                "No translations were produced (all attempts failed or returned unchanged text). "
+                "This often means the required Argos packages are not installed for 'en-><lang>' in offline mode."
+            )
 
         return trans

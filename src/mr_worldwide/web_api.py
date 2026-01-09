@@ -71,7 +71,7 @@ async def generate_gif(
         args.tts = tts
         args.background_images = None
 
-        config = Config.from_args.__func__(args)  # Call the classmethod with mock args
+        config = Config.from_parsed_args(args)
 
         # Generate unique output path
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmp:

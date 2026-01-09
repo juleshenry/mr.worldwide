@@ -4,8 +4,8 @@ import os
 # Ensure src is in the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from mr_worldwide import Config, Translator, GifGenerator
-from mr_worldwide.logger import setup_logging, get_logger
+from src.mr_worldwide import Config, Translator, GifGenerator
+from src.mr_worldwide.logger import setup_logging, get_logger
 import sys
 
 def interactive_config(config):

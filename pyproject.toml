@@ -5,7 +5,7 @@ description = "A tool to generate GIFs with translated text in multiple language
 authors = ["Enrique <enrique@example.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "mr_worldwide"}]
+packages = [{include = "mr_worldwide", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"

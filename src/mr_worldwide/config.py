@@ -2,6 +2,47 @@ import argparse
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
+
+def _parse_int_tuple(value: str, *, expected_len: int, name: str) -> Tuple[int, ...]:
+    parts = [p.strip() for p in value.split(",") if p.strip() != ""]
+    if len(parts) != expected_len:
+        raise ValueError(f"{name} must have {expected_len} comma-separated integers (got '{value}')")
+    try:
+        return tuple(int(p) for p in parts)
+    except ValueError as e:
+        raise ValueError(f"{name} must be integers (got '{value}')") from e
+
+
+def _clamp_rgb(rgb: Tuple[int, ...]) -> Tuple[int, int, int]:
+    if len(rgb) != 3:
+        raise ValueError(f"RGB color must have 3 components (got {rgb})")
+    r, g, b = rgb
+    return (
+        max(0, min(255, int(r))),
+        max(0, min(255, int(g))),
+        max(0, min(255, int(b))),
+    )
+
+
+def _parse_rgb(value: str, *, name: str) -> Tuple[int, int, int]:
+    # Accepts out-of-range values (e.g. 256 from README) by clamping to 0-255.
+    return _clamp_rgb(_parse_int_tuple(value, expected_len=3, name=name))
+
+
+def _parse_languages(values: List[str]) -> List[str]:
+    # argparse uses nargs='+', so users might pass either:
+    #   --languages es fr de
+    # or:
+    #   --languages es,fr,de
+    # Normalize both.
+    out: List[str] = []
+    for item in values:
+        for part in item.split(","):
+            part = part.strip()
+            if part:
+                out.append(part)
+    return out or ["all"]
+
 @dataclass
 class Config:
     text: Optional[str]
@@ -25,6 +66,50 @@ class Config:
     provider: str
 
     @classmethod
+    def from_parsed_args(cls, args: argparse.Namespace) -> "Config":
+        # Process arguments
+        text_array = args.text_array.split(",") if args.text_array else None
+        font_color = _parse_rgb(args.font_color, name="font_color")
+        background_color = _parse_rgb(args.background_color, name="background_color")
+        size = _parse_int_tuple(args.size, expected_len=2, name="size")
+
+        # Normalize languages
+        args.languages = _parse_languages(args.languages)
+
+        # Parse delay
+        if isinstance(args.delay, str) and args.delay.startswith("sine:"):
+            spec = args.delay.split(":", 1)[1]
+            parts = [p.strip() for p in spec.split(",") if p.strip() != ""]
+            if len(parts) != 2:
+                raise ValueError("--delay sine syntax must be 'sine:sine_delay,delay' (e.g. sine:500,100)")
+            args.sine_delay = int(parts[0])
+            args.delay = int(parts[1])
+        else:
+            args.delay = int(args.delay)
+
+        return cls(
+            text=args.text,
+            text_array=text_array,
+            delay=args.delay,
+            sine_delay=args.sine_delay,
+            font_size=args.font_size,
+            font_color=font_color,
+            font_path=args.font_path,
+            background_color=background_color,
+            background_images=args.background_images,
+            size=size,
+            gif_path=args.gif_path,
+            languages=args.languages,
+            log_level=args.log_level,
+            provider=args.provider,
+            animation=args.animation,
+            smart_color=args.smart_color,
+            tts=args.tts,
+            interactive=getattr(args, "interactive", False),
+            offline=getattr(args, "offline", False),
+        )
+
+    @classmethod
     def from_args(cls):
         parser = argparse.ArgumentParser(
             description="Create a GIF with customizable parameters"
@@ -32,7 +117,10 @@ class Config:
         parser.add_argument("--text", default=None, help="The text to display")
         parser.add_argument("--text_array", default=None, help="The text to display")
         parser.add_argument(
-            "--delay", type=str, default="100", help="Delay between frames in milliseconds, or 'sine:delay,sine_delay' for sine animation"
+            "--delay",
+            type=str,
+            default="100",
+            help="Delay between frames in milliseconds, or 'sine:sine_delay,delay' (e.g. sine:500,100)"
         )
         parser.add_argument(
             "--sine_delay",
@@ -44,7 +132,7 @@ class Config:
             "--font_size", type=int, default=32, help="Font size"
         )
         parser.add_argument(
-            "--font_color", type=str, default="256,256,256", help="Font color (R,G,B)"
+            "--font_color", type=str, default="255,255,255", help="Font color (R,G,B)"
         )
         parser.add_argument(
             "--font_path", default="fonts/arial.ttf", help="Path to the font file"
@@ -86,39 +174,4 @@ class Config:
         )
         
         args = parser.parse_args()
-
-        # Process arguments
-        text_array = args.text_array.split(",") if args.text_array else None
-        font_color = tuple(map(int, args.font_color.split(",")))
-        background_color = tuple(map(int, args.background_color.split(",")))
-        size = tuple(map(int, args.size.split(",")))
-
-        # Parse delay
-        if args.delay.startswith("sine:"):
-            parts = args.delay.split(":")[1].split(",")
-            args.delay = int(parts[1])
-            args.sine_delay = int(parts[0])
-        else:
-            args.delay = int(args.delay)
-        
-        return cls(
-            text=args.text,
-            text_array=text_array,
-            delay=args.delay,
-            sine_delay=args.sine_delay,
-            font_size=args.font_size,
-            font_color=font_color,
-            font_path=args.font_path,
-            background_color=background_color,
-            background_images=args.background_images,
-            size=size,
-            gif_path=args.gif_path,
-            languages=args.languages,
-            log_level=args.log_level,
-            provider=args.provider,
-            animation=args.animation,
-            smart_color=args.smart_color,
-            tts=args.tts,
-            interactive=args.interactive,
-            offline=args.offline
-        )
+        return cls.from_parsed_args(args)
