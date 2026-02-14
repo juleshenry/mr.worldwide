@@ -41,6 +41,7 @@ python3 mr-worldwide.py --text "Love" --use_icons --languages all --delay 500 --
 
 ### Advanced Options
 - `--use_icons`: Enables country-specific background images from `hello_assets/` or `love_assets/`.
+- `--rainbow`: Enables rainbow colors for the text.
 - `--smart_color_picker`: (Automatic when using images) Picks white or black text based on background luminance for maximum contrast.
 - **Dynamic Font Scaling**: (Automatic) Automatically shrinks font size for long translations to ensure they fit within the specified image width.
 

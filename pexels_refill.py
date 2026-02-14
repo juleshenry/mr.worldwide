@@ -312,36 +312,66 @@ def download_from_pexels(country, api_key, word="hello", count=1):
     headers = {"Authorization": api_key}
 
     country_name = country.replace("_", " ")
+    eponym = country_to_eponym(country)
+
     if word.lower() == "hello":
         # More specific queries to avoid generic cultural heritage results
         queries = [
             f"{country_name} landmarks",
             f"{country_name} culture",
-            f"cultural heritage {country_name}",
+            f"{country_name} scenery",
+            f"{country_name} travel",
+            f"beautiful {country_name}",
+            f"{country_name} architecture",
+            f"{country_name} tourism",
         ]
         assets_dir = "hello_assets"
     elif word.lower() == "love":
-        eponym = country_to_eponym(country)
-        queries = [f"{eponym} couple", f"romance {country_name}"]
+        queries = [
+            f"{eponym} couple",
+            f"romance {country_name}",
+            f"love {country_name}",
+            f"{eponym} romance",
+            f"romantic {country_name}",
+        ]
         assets_dir = "love_assets"
     else:
-        queries = [country_name]
+        queries = [
+            country_name,
+            f"{country_name} landscape",
+            f"{country_name} city",
+            f"{country_name} nature",
+            f"{country_name} travel",
+        ]
         assets_dir = "icon_assets"
 
-    # Request more images than needed to allow skipping duplicates
-    search_count = max(count + 10, 20)
+    # Randomize query order to avoid same first results
+    random.shuffle(queries)
+
+    # Request max images per page to maximize variety
+    search_count = 80
 
     downloaded = 0
     for query in queries:
         if downloaded >= count:
             break
 
-        url = f"https://api.pexels.com/v1/search?query={query}&orientation=landscape&per_page={search_count}"
+        # Try a random page to avoid getting the same "bad" images
+        page = random.randint(1, 5)
+        url = f"https://api.pexels.com/v1/search?query={query}&orientation=landscape&per_page={search_count}&page={page}"
 
         try:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
+
+            # If the random page is empty, try page 1
+            if not data.get("photos") and page > 1:
+                print(f"Page {page} empty for '{query}', trying page 1...")
+                url = f"https://api.pexels.com/v1/search?query={query}&orientation=landscape&per_page={search_count}&page=1"
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json()
 
             if not data.get("photos"):
                 continue
@@ -368,7 +398,10 @@ def download_from_pexels(country, api_key, word="hello", count=1):
                     continue
 
                 target_path = os.path.join(assets_dir, country, filename)
-                print(f"Downloading {img_url} to {target_path} (Query: {query})...")
+                current_page = 1 if "page=1" in url else page
+                print(
+                    f"Downloading {img_url} to {target_path} (Query: {query}, Page: {current_page})..."
+                )
                 img_response = requests.get(img_url)
                 img_response.raise_for_status()
 

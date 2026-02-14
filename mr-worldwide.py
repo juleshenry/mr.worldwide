@@ -528,6 +528,22 @@ def get_flag_colors_for_text(text, lang_code):
     return char_colors
 
 
+def get_rainbow_colors_for_text(text, frame_idx, total_frames):
+    n_chars = len(text)
+    char_colors = []
+    if n_chars == 0:
+        return []
+
+    # Use frame_idx to shift the hue for each page/translation
+    base_hue = frame_idx / total_frames
+
+    # Generate pastel color: high lightness (0.7-0.8) and moderate saturation (0.4-0.6)
+    r, g, b = colorsys.hls_to_rgb(base_hue, 0.8, 0.5)
+    color = (int(r * 255), int(g * 255), int(b * 255))
+
+    return [color] * n_chars
+
+
 def get_trans(text, languages=None):
     """
     Get hardcoded translations for "hello" and "love" from translations.json.
@@ -850,7 +866,11 @@ def create_gif(params):
         if config_key not in text_configs:
             f_size = base_font_size
             t_width, b_left, b_right = get_actual_text_width(
-                t, l, font_path, f_size, char_by_char=params.use_flag_colors
+                t,
+                l,
+                font_path,
+                f_size,
+                char_by_char=params.use_flag_colors or params.rainbow,
             )
 
             # If text cannot be rendered at all, mark it to be skipped
@@ -862,7 +882,11 @@ def create_gif(params):
             while t_width > max_width * 0.9 and f_size > 8:
                 f_size -= 2
                 t_width, b_left, b_right = get_actual_text_width(
-                    t, l, font_path, f_size, char_by_char=params.use_flag_colors
+                    t,
+                    l,
+                    font_path,
+                    f_size,
+                    char_by_char=params.use_flag_colors or params.rainbow,
                 )
 
             text_configs[config_key] = (f_size, t_width, b_left, b_right)
@@ -871,7 +895,13 @@ def create_gif(params):
     used_images_paths = set()
 
     def create_frame(
-        text, lang_code, preferred_font_path, default_font_color, bg_color
+        text,
+        lang_code,
+        preferred_font_path,
+        default_font_color,
+        bg_color,
+        frame_idx,
+        total_frames,
     ):
         # Use the pre-calculated font size and width for this specific text and language
         font_size, text_width, b_left, b_right = text_configs[(text, lang_code)]
@@ -903,9 +933,13 @@ def create_gif(params):
         # Get actual bounding box for contrast calculation
         bbox = draw.textbbox((x, y), text, font=font)
 
-        if params.use_flag_colors:
-            char_colors = get_flag_colors_for_text(text, lang_code)
-            # For flag colors, we still want a stroke for contrast if background is complex
+        if params.use_flag_colors or params.rainbow:
+            if params.rainbow:
+                char_colors = get_rainbow_colors_for_text(text, frame_idx, total_frames)
+            else:
+                char_colors = get_flag_colors_for_text(text, lang_code)
+
+            # For multi-color text, we still want a stroke for contrast if background is complex
             if use_icons or params.smart_color:
                 _, outline_color = get_contrast_colors(
                     image, bbox, default_color=default_font_color
@@ -952,7 +986,7 @@ def create_gif(params):
             )
         return image
 
-    for t, l in text_array:
+    for i, (t, l) in enumerate(text_array):
         if text_configs[(t, l)][1] == 0 and t.strip():
             print(f"Skipping frame for '{t}' ({l}): No suitable font found.")
             continue
@@ -962,6 +996,8 @@ def create_gif(params):
             font_path,
             font_color_pref,
             background_color,
+            i,
+            len(text_array),
         )
         frames.append(image)
 
@@ -1055,6 +1091,11 @@ def main():
         "--use_flag_colors",
         action="store_true",
         help="Use colors from the country flag for the text",
+    )
+    parser.add_argument(
+        "--rainbow",
+        action="store_true",
+        help="Use rainbow colors for the text",
     )
     parser.add_argument(
         "--languages", nargs="+", default="all", help="two letter code listˀ"
