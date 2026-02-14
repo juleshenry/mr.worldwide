@@ -10,6 +10,10 @@ The project is organized as follows:
 
 - `src/`: Core logic and main script.
   - `mr_worldwide.py`: The main CLI tool.
+  - `config.py`: Configuration and language mappings.
+  - `utils.py`: Utility functions and path handling.
+  - `assets_manager.py`: Management of fonts, images, and translations.
+  - `renderer.py`: Core rendering logic for frames.
   - `download_assets.py`: Script to download initial images.
   - `analyze_flags.py`: Script to extract colors from SVG flags.
 - `tests/`: Validation and test scripts.
@@ -99,6 +103,7 @@ Every significant combination of CLI flags is documented below. You can run thes
 | `--size` | Image dimensions in `width,height`. | `256,256` |
 | `--delay` | Time between frames in milliseconds. | `100` |
 | `--sine_delay` | Focus on each frame for N ms in a loop. | `0` |
+| `--show_labels` | Show language/country labels on frames. | `False` |
 | `--languages` | List of ISO codes or `all`. | `all` |
 | `--font_path` | Path to a custom TTF/OTF font file. | `fonts/NotoSans-Regular.ttf` |
 
