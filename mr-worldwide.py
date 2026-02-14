@@ -117,24 +117,31 @@ LANG_TO_COUNTRY = {
     "yua": "mexico",
 }
 
-def get_contrast_colors(image, region):
+
+def get_contrast_colors(image, region, default_color=None):
     """
-    Calculate the average brightness of a region and return (text_color, outline_color)
-    for max contrast.
-    region is (left, top, right, bottom)
+    Calculate the best text color by inverting the average background color
+    of the region for maximum difference.
     """
     if region[2] <= region[0] or region[3] <= region[1]:
         return (255, 255, 255), (0, 0, 0)
-    
+
     crop = image.crop(region)
-    stat = ImageStat.Stat(crop.convert("L"))
-    brightness = stat.mean[0]
-    
-    # Threshold for brightness is 127
-    if brightness > 127:
-        return (0, 0, 0), (255, 255, 255)
-    else:
-        return (255, 255, 255), (0, 0, 0)
+    stat = ImageStat.Stat(crop)
+    avg_rgb = tuple(int(x) for x in stat.mean[:3])
+
+    # Calculate the inverted color for maximum difference
+    text_color = tuple(255 - c for c in avg_rgb)
+
+    # For the outline/stroke, pick white or black based on text brightness
+    # to ensure the text itself is readable against the inverted background.
+    brightness = (
+        text_color[0] * 299 + text_color[1] * 587 + text_color[2] * 114
+    ) / 1000
+    outline_color = (0, 0, 0) if brightness > 127 else (255, 255, 255)
+
+    return text_color, outline_color
+
 
 def get_background_image(lang_code, size, assets_dir="picture_assets"):
     """
@@ -142,14 +149,14 @@ def get_background_image(lang_code, size, assets_dir="picture_assets"):
     """
     country = LANG_TO_COUNTRY.get(lang_code)
     img_path = None
-    
+
     if country:
         country_dir = os.path.join(assets_dir, country)
         if os.path.exists(country_dir):
             images = glob.glob(os.path.join(country_dir, "*.*"))
             if images:
                 img_path = random.choice(images)
-    
+
     if not img_path:
         default_path = os.path.join(assets_dir, "global_default.jpg")
         if os.path.exists(default_path):
@@ -160,14 +167,14 @@ def get_background_image(lang_code, size, assets_dir="picture_assets"):
 
     try:
         img = Image.open(img_path).convert("RGB")
-        
+
         # Resize and center crop (Cover strategy)
         target_w, target_h = size
         img_w, img_h = img.size
-        
+
         aspect_target = target_w / target_h
         aspect_img = img_w / img_h
-        
+
         if aspect_img > aspect_target:
             # Image is wider than target
             new_h = target_h
@@ -182,11 +189,12 @@ def get_background_image(lang_code, size, assets_dir="picture_assets"):
             img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
             top = (new_h - target_h) // 2
             img = img.crop((0, top, target_w, top + target_h))
-            
+
         return img
     except Exception as e:
         print(f"Error loading image {img_path}: {e}")
         return Image.new("RGB", size, (128, 128, 128))
+
 
 # Static translations for Hello and Love
 def get_trans(text, languages=None):
@@ -205,7 +213,11 @@ def get_trans(text, languages=None):
     if key in static_translations:
         translations = static_translations[key]
         res = []
-        if languages == "all" or languages is None or (isinstance(languages, list) and "all" in languages):
+        if (
+            languages == "all"
+            or languages is None
+            or (isinstance(languages, list) and "all" in languages)
+        ):
             # Return all available translations for this word
             for lang, trans_text in translations.items():
                 res.append((trans_text, lang))
@@ -213,7 +225,7 @@ def get_trans(text, languages=None):
             # Return only requested languages
             if isinstance(languages, str):
                 languages = [languages]
-            
+
             res.append((translations.get("en", text), "en"))
             for lang in languages:
                 if lang in translations and lang != "en":
@@ -221,6 +233,8 @@ def get_trans(text, languages=None):
         return res
     else:
         return [(text, "en")]
+
+
 """
 ############################################
 ############################################
@@ -297,7 +311,7 @@ def create_gif(params):
     text_array = []
     if params.text_array:
         text_array = [(t.strip(), "und") for t in params.text_array.split(",")]
-    
+
     if not text and not text_array:
         raise ValueError("need text or text array")
 
@@ -309,30 +323,30 @@ def create_gif(params):
     font_size = params.font_size
     languages = params.languages
     use_images = params.use_images
-    
+
     # Hard-coded width
     width, height = (int(x) for x in params.size.split(","))
-    
+
     # Get translations if text is provided
     if text:
         text_array = get_trans(text, languages=languages)
 
     # Calculate actual font size and width for each translation to ensure it fits
     base_font_size = font_size if font_size != 32 else height // 4
-    text_configs = {} # text -> (font_size, width)
-    
+    text_configs = {}  # text -> (font_size, width)
+
     max_width = width
-    
+
     for t, l in text_array:
         if t not in text_configs:
             f_size = base_font_size
             t_width = get_actual_text_width(t, font_path, f_size)
-            
+
             # Reduce font size until it fits (with 5% padding on each side)
             while t_width > max_width * 0.9 and f_size > 8:
                 f_size -= 2
                 t_width = get_actual_text_width(t, font_path, f_size)
-            
+
             text_configs[t] = (f_size, t_width)
 
     frames = []
@@ -345,26 +359,35 @@ def create_gif(params):
             image = get_background_image(lang_code, (max_width, height))
         else:
             image = Image.new("RGB", (max_width, height), color=bg_color)
-            
+
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font_path, font_size)
-        
+
         x = max_width / 2 - text_width / 2
-        y = (height - font_size) / 2 # Center vertically
-        
+        y = (height - font_size) / 2  # Center vertically
+
         # Get actual bounding box for contrast calculation
         bbox = draw.textbbox((x, y), text, font=font)
 
-        if use_images:
-            color, outline_color = get_contrast_colors(image, bbox)
+        if use_images or params.smart_color:
+            color, outline_color = get_contrast_colors(
+                image, bbox, default_color=default_font_color
+            )
             # Add a stroke for maximum contrast
             stroke_width = max(2, font_size // 15)
         else:
             color = default_font_color
             outline_color = None
             stroke_width = 0
-            
-        draw.text((x, y), text, font=font, fill=color, stroke_width=stroke_width, stroke_fill=outline_color)
+
+        draw.text(
+            (x, y),
+            text,
+            font=font,
+            fill=color,
+            stroke_width=stroke_width,
+            stroke_fill=outline_color,
+        )
         return image
 
     for t, l in text_array:
@@ -376,7 +399,7 @@ def create_gif(params):
             background_color,
         )
         frames.append(image)
-        
+
     if not frames:
         print("No frames created.")
         return
@@ -451,10 +474,17 @@ def main():
         "--gif_path", default="output.gif", help="Path to save the output GIF"
     )
     parser.add_argument(
-        "--languages", nargs="+", default="all", help="two letter code listˀ"
+        "--use_images",
+        action="store_true",
+        help="Use country-specific background images",
     )
     parser.add_argument(
-        "--use_images", action="store_true", help="Use country-specific background images"
+        "--smart_color",
+        action="store_true",
+        help="Automatically pick best text color based on background",
+    )
+    parser.add_argument(
+        "--languages", nargs="+", default="all", help="two letter code listˀ"
     )
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))
