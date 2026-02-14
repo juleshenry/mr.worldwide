@@ -2,18 +2,23 @@
 
 Mr. Worldwide is a Python tool that generates animated GIFs of a single word translated into many languages, each displayed against a culturally relevant background image.
 
-![Mr. Worldwide Demo](worldwide_demo.gif)
+![Mr. Worldwide Demo](examples/demos/worldwide_demo.gif)
 
-## Features
+## Project Structure
 
-- **Multi-language Support**: Automatically translates words like "Hello" and "Love" into over 100 languages.
-- **Dynamic Backgrounds**: Uses country-specific images when available (from `hello_assets/` and `love_assets/`).
-- **Smart Color Selection**: Automatically chooses the best text color and outline for maximum contrast against dynamic backgrounds.
-- **Automatic Font Scaling**: Ensures long translations fit perfectly within the image dimensions.
-- **Regional Ordering**: Frames are ordered by region (Europe, Asia, Africa, etc.) for a logical flow.
-- **Unicode Excellence**: Automatically selects the correct Noto font for different scripts (Arabic, Devanagari, CJK, etc.).
-- **Visual Effects**: Supports rainbow text and flag-colored text.
-- **Flexible Timing**: Supports constant delay or "round-robin" timing.
+The project is organized as follows:
+
+- `src/`: Core logic and main script.
+  - `mr_worldwide.py`: The main CLI tool.
+  - `download_assets.py`: Script to download initial images.
+  - `analyze_flags.py`: Script to extract colors from SVG flags.
+- `tests/`: Validation and test scripts.
+- `examples/`: Example scripts and generated GIFs.
+  - `permutations/`: Scripts for every CLI option permutation.
+  - `demos/`: Pre-generated demo GIFs.
+  - `outputs/`: GIFs generated from the permutation scripts.
+- `fonts/`: Unicode-compliant Noto fonts.
+- `hello_assets/` / `love_assets/`: Background images organized by country.
 
 ## Installation
 
@@ -33,7 +38,7 @@ Mr. Worldwide is a Python tool that generates animated GIFs of a single word tra
 3.  **(Optional) Download assets**:
     Download some initial background images from Wikimedia Commons:
     ```bash
-    python3 download_assets.py
+    python3 src/download_assets.py
     ```
 
 ## Usage
@@ -41,22 +46,47 @@ Mr. Worldwide is a Python tool that generates animated GIFs of a single word tra
 ### Basic Example
 Generate a simple GIF with a solid background:
 ```bash
-python3 mr-worldwide.py --text "Hello" --size "512,512" --delay 500
+python3 src/mr_worldwide.py --text "Hello" --size "512,512" --delay 500
 ```
 
 ### Mr. Worldwide Mode (The Full Experience)
 Generate a GIF with background images, smart colors, and regional ordering:
 ```bash
-python3 mr-worldwide.py --text "Love" --use_icons --smart_color --delay 500 --gif_path "love_worldwide.gif"
+python3 src/mr_worldwide.py --text "Love" --use_icons --smart_color --delay 500 --gif_path "love_worldwide.gif"
 ```
 
-### Custom Text Array
-Provide your own list of words:
-```bash
-python3 mr-worldwide.py --text_array "Hola, Bonjour, Ciao, привет" --size "400,200" --rainbow --delay 300
-```
+## CLI Permutations Gallery
 
-### Advanced Options
+Every significant combination of CLI flags is documented below. You can run these yourself using the scripts in `examples/permutations/`.
+
+### 🌟 Visual Styles
+
+| Feature | Preview | CLI Syntax |
+| :--- | :--- | :--- |
+| **Flag Colors** | ![Flag Colors](examples/outputs/flag_colors.gif) | `--use_flag_colors` |
+| **Rainbow Effect** | ![Rainbow](examples/outputs/rainbow.gif) | `--rainbow` |
+| **Smart Contrast** | ![Smart Color](examples/outputs/smart_colors.gif) | `--use_icons --smart_color` |
+| **Icons Mode** | ![Icons](examples/outputs/use_icons.gif) | `--use_icons` |
+| **Basic Text** | ![Basic](examples/outputs/basic_text.gif) | `--text "Hello"` |
+
+### 🛠 Layout & Timing
+
+| Feature | Preview | CLI Syntax |
+| :--- | :--- | :--- |
+| **Sine Focus** | ![Sine Delay](examples/outputs/sine_delay.gif) | `--sine_delay 1000 --delay 100` |
+| **Size & Delay** | ![Custom Size](examples/outputs/custom_size_delay.gif) | `--size "512,128" --delay 500` |
+| **Text Array** | ![Text Array](examples/outputs/text_array.gif) | `--text_array "Hola, Hello, ..."` |
+| **Custom Colors** | ![Custom Colors](examples/outputs/custom_colors.gif) | `--font_color "255,0,0" --background_color "0,255,255"` |
+
+### 🌍 Combined Modes
+
+| Feature | Preview | CLI Syntax |
+| :--- | :--- | :--- |
+| **Full Package** | ![Full Package](examples/outputs/full_package.gif) | `--use_icons --smart_color --use_flag_colors` |
+| **Icons + Rainbow** | ![Icons Rainbow](examples/outputs/icons_rainbow.gif) | `--use_icons --rainbow` |
+| **Icons + Flags** | ![Icons Flags](examples/outputs/icons_flag_colors.gif) | `--use_icons --use_flag_colors` |
+
+## Advanced Options
 
 | Option | Description | Default |
 | :--- | :--- | :--- |
@@ -71,20 +101,6 @@ python3 mr-worldwide.py --text_array "Hola, Bonjour, Ciao, привет" --size 
 | `--sine_delay` | Focus on each frame for N ms in a loop. | `0` |
 | `--languages` | List of ISO codes or `all`. | `all` |
 | `--font_path` | Path to a custom TTF/OTF font file. | `fonts/NotoSans-Regular.ttf` |
-
-## Asset Organization
-
-- `hello_assets/`: Folders named by country containing images for the word "Hello".
-- `love_assets/`: Folders named by country containing images for the word "Love".
-- `fonts/`: Contains Unicode-compliant Noto fonts.
-- `translations.json`: Dictionary of hardcoded translations.
-
-## Advanced: Refilling Assets
-If you want to use the Pexels API to download more high-quality background images, you can use `pexels_refill.py`. You will need a Pexels API key saved in a `.1nv` file as `PEXELS_API_KEY=your_key_here`.
-
-```bash
-python3 pexels_refill.py
-```
 
 ## Requirements
 
