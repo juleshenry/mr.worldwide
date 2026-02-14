@@ -56,9 +56,18 @@ def download_image(query, target_path):
         return
 
     # Check if file exists and is not a dummy
-    if os.path.exists(target_path) and os.path.getsize(target_path) > 5000:
-        print(f"Skipping {target_path}, already exists and seems valid.")
-        return
+    if os.path.exists(target_path):
+        try:
+            from PIL import Image
+
+            with Image.open(target_path) as img:
+                img.load()
+            if os.path.getsize(target_path) > 5000:
+                print(f"Skipping {target_path}, already exists and seems valid.")
+                return
+        except:
+            print(f"Existing file {target_path} is invalid, redownloading...")
+            os.remove(target_path)
 
     print(f"Downloading {query} from {url} to {target_path}...")
     try:
