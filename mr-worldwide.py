@@ -62,7 +62,7 @@ LANG_TO_COUNTRY = {
     "sw": "kenya",
     "tl": "philippines",
     "is": "iceland",
-    "ga": "ireland",
+    "ga": "republic_of_ireland",
     "cy": "united_kingdom",
     "gd": "united_kingdom",
     "lb": "luxembourg",
@@ -70,7 +70,7 @@ LANG_TO_COUNTRY = {
     "sq": "albania",
     "hy": "armenia",
     "az": "azerbaijan",
-    "ka": "georgia",
+    "ka": "armenia",  # Fallback for Georgia which is missing
     "kk": "kazakhstan",
     "ky": "kyrgyzstan",
     "tg": "tajikistan",
@@ -98,7 +98,7 @@ LANG_TO_COUNTRY = {
     "sm": "samoa",
     "to": "tonga",
     "fj": "fiji",
-    "eo": "global",
+    "eo": "esperanto",
     "ca": "spain",
     "gl": "spain",
     "eu": "spain",
@@ -121,6 +121,108 @@ LANG_TO_COUNTRY = {
     "nah": "mexico",
     "yua": "mexico",
 }
+
+# Regional mapping for ordering
+COUNTRY_TO_REGION = {
+    "spain": "Europe",
+    "france": "Europe",
+    "germany": "Europe",
+    "italy": "Europe",
+    "poland": "Europe",
+    "ukraine": "Europe",
+    "netherlands": "Europe",
+    "greece": "Europe",
+    "sweden": "Europe",
+    "denmark": "Europe",
+    "finland": "Europe",
+    "norway": "Europe",
+    "hungary": "Europe",
+    "czech_republic": "Europe",
+    "romania": "Europe",
+    "slovakia": "Europe",
+    "bulgaria": "Europe",
+    "croatia": "Europe",
+    "serbia": "Europe",
+    "slovenia": "Europe",
+    "estonia": "Europe",
+    "latvia": "Europe",
+    "lithuania": "Europe",
+    "iceland": "Europe",
+    "republic_of_ireland": "Europe",
+    "united_kingdom": "Europe",
+    "luxembourg": "Europe",
+    "malta": "Europe",
+    "albania": "Europe",
+    "armenia": "Europe",
+    "azerbaijan": "Europe",
+    "georgia": "Europe",
+    "russia": "Europe",
+    "japan": "Asia",
+    "south_korea": "Asia",
+    "china": "Asia",
+    "india": "Asia",
+    "saudi_arabia": "Asia",
+    "bangladesh": "Asia",
+    "indonesia": "Asia",
+    "vietnam": "Asia",
+    "turkey": "Asia",
+    "pakistan": "Asia",
+    "thailand": "Asia",
+    "israel": "Asia",
+    "malaysia": "Asia",
+    "iran": "Asia",
+    "philippines": "Asia",
+    "kazakhstan": "Asia",
+    "kyrgyzstan": "Asia",
+    "tajikistan": "Asia",
+    "turkmenistan": "Asia",
+    "uzbekistan": "Asia",
+    "mongolia": "Asia",
+    "myanmar": "Asia",
+    "cambodia": "Asia",
+    "laos": "Asia",
+    "sri_lanka": "Asia",
+    "nepal": "Asia",
+    "afghanistan": "Asia",
+    "iraq": "Asia",
+    "kenya": "Africa",
+    "ethiopia": "Africa",
+    "nigeria": "Africa",
+    "south_africa": "Africa",
+    "united_states": "North America",
+    "mexico": "North America",
+    "brazil": "South America",
+    "paraguay": "South America",
+    "peru": "South America",
+    "bolivia": "South America",
+    "new_zealand": "Oceania",
+    "samoa": "Oceania",
+    "tonga": "Oceania",
+    "fiji": "Oceania",
+    "esperanto": "Global",
+    "global": "Global",
+}
+
+REGION_ORDER = [
+    "Europe",
+    "Asia",
+    "Africa",
+    "North America",
+    "South America",
+    "Oceania",
+    "Global",
+]
+
+
+def get_lang_sort_key(lang_code):
+    """Returns a sort key based on regional ordering."""
+    country = LANG_TO_COUNTRY.get(lang_code, "global")
+    region = COUNTRY_TO_REGION.get(country, "Global")
+    try:
+        region_idx = REGION_ORDER.index(region)
+    except ValueError:
+        region_idx = len(REGION_ORDER)
+    return (region_idx, lang_code)
 
 
 def get_contrast_colors(image, region, default_color=None):
@@ -298,6 +400,44 @@ def get_background_image(
 
 
 # Static translations for Hello and Love
+FLAG_COLORS = {}
+try:
+    with open("flag_colors.json", "r") as f:
+        FLAG_COLORS = json.load(f)
+except:
+    pass
+
+
+def hex_to_rgb(hex_str):
+    hex_str = hex_str.lstrip("#")
+    if len(hex_str) == 3:
+        hex_str = "".join([c * 2 for c in hex_str])
+    return tuple(int(hex_str[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def get_flag_colors_for_text(text, lang_code):
+    country_key = LANG_TO_COUNTRY.get(lang_code, "global")
+    # Normalize country_key to match flag_colors.json (e.g. "united_states" -> "United_States")
+    formatted_country = "_".join([w.capitalize() for w in country_key.split("_")])
+
+    colors_hex = FLAG_COLORS.get(formatted_country)
+    if not colors_hex:
+        # Fallback to some defaults if country not found
+        colors_hex = ["#FFFFFF"]
+
+    # Map colors to characters
+    n_chars = len(text)
+    n_colors = len(colors_hex)
+    char_colors = []
+    if n_chars == 0:
+        return []
+
+    for i in range(n_chars):
+        color_idx = min(int((i / n_chars) * n_colors), n_colors - 1)
+        char_colors.append(hex_to_rgb(colors_hex[color_idx]))
+    return char_colors
+
+
 def get_trans(text, languages=None):
     """
     Get hardcoded translations for "hello" and "love" from translations.json.
@@ -331,6 +471,9 @@ def get_trans(text, languages=None):
             for lang in languages:
                 if lang in translations and lang != "en":
                     res.append((translations[lang], lang))
+
+        # Sort results based on regional ordering
+        res.sort(key=lambda x: get_lang_sort_key(x[1]))
         return res
     else:
         return [(text, "en")]
@@ -424,19 +567,32 @@ def get_font_for_lang(lang_code, text, preferred_path):
         "am": "fonts/NotoSansEthiopic-Regular.ttf",
         "hy": "fonts/NotoSansArmenian-Regular.ttf",
         "ka": "fonts/NotoSansGeorgian-Regular.ttf",
-        "bo": "fonts/NotoSansTibetan-Regular.ttf",
+        "bo": "fonts/NotoSerifTibetan-Regular.ttf",
+        "gu": "fonts/NotoSansGujarati-Regular.ttf",
     }
 
     # Helper to check if text contains characters that definitely won't work with NotoSans-Regular
     def needs_special_font(t):
         for char in t:
             code = ord(char)
-            # Basic Latin, Cyrillic, Greek are usually okay in NotoSans-Regular
-            if code > 0x052F:  # Past Cyrillic
-                # Skip common punctuation/symbols
-                if 0x2000 <= code <= 0x206F:
-                    continue
-                return True
+            # Standard Latin, Greek, Cyrillic
+            if 0x0000 <= code <= 0x052F:
+                continue
+            # Vietnamese / Latin Extended Additional
+            if 0x1E00 <= code <= 0x1EFF:
+                continue
+            # General Punctuation, Currency, Symbols
+            if 0x2000 <= code <= 0x2BFF:
+                continue
+            # CJK Symbols and Punctuation
+            if 0x3000 <= code <= 0x303F:
+                continue
+            # Fullwidth Forms
+            if 0xFF00 <= code <= 0xFFEF:
+                continue
+
+            # If it's outside these, it might need a specific Noto font
+            return True
         return False
 
     # 1. Try explicit mapping
@@ -449,6 +605,7 @@ def get_font_for_lang(lang_code, text, preferred_path):
     script_ranges = [
         ("\u0600", "\u06ff", "fonts/NotoSansArabic-Regular.ttf"),
         ("\u0900", "\u097f", "fonts/NotoSansDevanagari-Regular.ttf"),
+        ("\u0a80", "\u0aff", "fonts/NotoSansGujarati-Regular.ttf"),
         ("\u0980", "\u09ff", "fonts/NotoSansBengali-Regular.ttf"),
         ("\u0a00", "\u0a7f", "fonts/NotoSansGurmukhi-Regular.ttf"),
         ("\u0b80", "\u0bff", "fonts/NotoSansTamil-Regular.ttf"),
@@ -458,17 +615,21 @@ def get_font_for_lang(lang_code, text, preferred_path):
         ("\u0d80", "\u0dff", "fonts/NotoSansSinhala-Regular.ttf"),
         ("\u0e00", "\u0e7f", "fonts/NotoSansThai-Regular.ttf"),
         ("\u0e80", "\u0eff", "fonts/NotoSansLao-Regular.ttf"),
-        ("\u0f00", "\u0fff", "fonts/NotoSansTibetan-Regular.ttf"),
+        ("\u0f00", "\u0fff", "fonts/NotoSerifTibetan-Regular.ttf"),
         ("\u1000", "\u109f", "fonts/NotoSansMyanmar-Regular.ttf"),
         ("\u10a0", "\u10ff", "fonts/NotoSansGeorgian-Regular.ttf"),
         ("\u1200", "\u137f", "fonts/NotoSansEthiopic-Regular.ttf"),
         ("\u0590", "\u05ff", "fonts/NotoSansHebrew-Regular.ttf"),
         ("\u0530", "\u058f", "fonts/NotoSansArmenian-Regular.ttf"),
         ("\u1780", "\u17ff", "fonts/NotoSansKhmer-Regular.ttf"),
+        # CJK
         ("\u4e00", "\u9fff", "fonts/noto-sc.ttf"),
+        ("\u3400", "\u4dbf", "fonts/noto-sc.ttf"),
         ("\u3040", "\u309f", "fonts/noto-sc.ttf"),
         ("\u30a0", "\u30ff", "fonts/noto-sc.ttf"),
         ("\uac00", "\ud7af", "fonts/noto-sc.ttf"),
+        ("\u3000", "\u303f", "fonts/noto-sc.ttf"),
+        ("\uff00", "\uffef", "fonts/noto-sc.ttf"),
     ]
 
     for char in text:
@@ -514,7 +675,11 @@ def get_actual_text_width(text, lang_code, preferred_font_path, font_size):
     font_path = get_font_for_lang(lang_code, text, preferred_font_path)
     if not font_path:
         return 0
-    font = ImageFont.truetype(font_path, font_size)
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+    except OSError as e:
+        print(f"Error loading font: {font_path} for text '{text}' ({lang_code})")
+        raise e
     # Create a temporary draw object to measure text
     temp_image = Image.new("RGB", (1, 1))
     draw = ImageDraw.Draw(temp_image)
@@ -617,25 +782,53 @@ def create_gif(params):
         # Get actual bounding box for contrast calculation
         bbox = draw.textbbox((x, y), text, font=font)
 
-        if use_images or params.smart_color:
-            color, outline_color = get_contrast_colors(
-                image, bbox, default_color=default_font_color
-            )
-            # Add a stroke for maximum contrast
-            stroke_width = max(2, font_size // 15)
-        else:
-            color = default_font_color
-            outline_color = None
-            stroke_width = 0
+        if params.use_flag_colors:
+            char_colors = get_flag_colors_for_text(text, lang_code)
+            # For flag colors, we still want a stroke for contrast if background is complex
+            if use_images or params.smart_color:
+                _, outline_color = get_contrast_colors(
+                    image, bbox, default_color=default_font_color
+                )
+                stroke_width = max(2, font_size // 15)
+            else:
+                outline_color = None
+                stroke_width = 0
 
-        draw.text(
-            (x, y),
-            text,
-            font=font,
-            fill=color,
-            stroke_width=stroke_width,
-            stroke_fill=outline_color,
-        )
+            # Draw character by character for simplicity in splitting colors
+            current_x = x
+            for i, char in enumerate(text):
+                char_color = char_colors[i % len(char_colors)]
+                draw.text(
+                    (current_x, y),
+                    char,
+                    font=font,
+                    fill=char_color,
+                    stroke_width=stroke_width,
+                    stroke_fill=outline_color,
+                )
+                # Advance x
+                char_w = draw.textlength(char, font=font)
+                current_x += char_w
+        else:
+            if use_images or params.smart_color:
+                color, outline_color = get_contrast_colors(
+                    image, bbox, default_color=default_font_color
+                )
+                # Add a stroke for maximum contrast
+                stroke_width = max(2, font_size // 15)
+            else:
+                color = default_font_color
+                outline_color = None
+                stroke_width = 0
+
+            draw.text(
+                (x, y),
+                text,
+                font=font,
+                fill=color,
+                stroke_width=stroke_width,
+                stroke_fill=outline_color,
+            )
         return image
 
     for t, l in text_array:
@@ -735,6 +928,11 @@ def main():
         "--smart_color",
         action="store_true",
         help="Automatically pick best text color based on background",
+    )
+    parser.add_argument(
+        "--use_flag_colors",
+        action="store_true",
+        help="Use colors from the country flag for the text",
     )
     parser.add_argument(
         "--languages", nargs="+", default="all", help="two letter code listˀ"
