@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     # Mr. Worldwide mode: using images and smart color contrast
     worldwide_cmd = (
-        'python3 mr-worldwide.py --text "Hello" --use_images --languages all --delay 500 --gif_path "mr_worldwide.gif"'
+        'python3 mr-worldwide.py --text "Hello" --use_icons --languages all --delay 500 --gif_path "mr_worldwide.gif"'
     )
 
     print((c := worldwide_cmd))

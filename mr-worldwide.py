@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageStat
 from collections import defaultdict
 from typing import List
 
-# Mapping from ISO 639-1 language codes to country folder names in picture_assets
+# Mapping from ISO 639-1 language codes to country folder names in icon_assets
 LANG_TO_COUNTRY = {
     "en": "united_states",
     "es": "spain",
@@ -313,15 +313,105 @@ def get_contrast_colors(image, region, default_color=None):
     return text_rgb, outline_color
 
 
-def get_background_image(
-    lang_code, size, used_images=None, assets_dir="picture_assets"
-):
+def country_to_eponym(country):
+    eponyms = {
+        "united_states": "american",
+        "spain": "spanish",
+        "france": "french",
+        "germany": "german",
+        "italy": "italian",
+        "brazil": "brazilian",
+        "russia": "russian",
+        "japan": "japanese",
+        "south_korea": "korean",
+        "china": "chinese",
+        "india": "indian",
+        "saudi_arabia": "saudi",
+        "bangladesh": "bangladeshi",
+        "indonesia": "indonesian",
+        "vietnam": "vietnamese",
+        "turkey": "turkish",
+        "pakistan": "pakistani",
+        "poland": "polish",
+        "ukraine": "ukrainian",
+        "netherlands": "dutch",
+        "greece": "greek",
+        "thailand": "thai",
+        "sweden": "swedish",
+        "denmark": "danish",
+        "finland": "finnish",
+        "norway": "norwegian",
+        "israel": "israeli",
+        "malaysia": "malaysian",
+        "hungary": "hungarian",
+        "czech_republic": "czech",
+        "romania": "romanian",
+        "slovakia": "slovak",
+        "bulgaria": "bulgarian",
+        "croatia": "croatian",
+        "serbia": "serbian",
+        "slovenia": "slovenian",
+        "estonia": "estonian",
+        "latvia": "latvian",
+        "lithuania": "lithuanian",
+        "iran": "iranian",
+        "kenya": "kenyan",
+        "philippines": "filipino",
+        "iceland": "icelandic",
+        "ireland": "irish",
+        "republic_of_ireland": "irish",
+        "united_kingdom": "british",
+        "luxembourg": "luxembourgish",
+        "malta": "maltese",
+        "albania": "albanian",
+        "armenia": "armenian",
+        "azerbaijan": "azerbaijani",
+        "georgia": "georgian",
+        "kazakhstan": "kazakh",
+        "kyrgyzstan": "kyrgyz",
+        "tajikistan": "tajik",
+        "turkmenistan": "turkmen",
+        "uzbekistan": "uzbek",
+        "mongolia": "mongolian",
+        "myanmar": "burmese",
+        "cambodia": "cambodian",
+        "laos": "laotian",
+        "sri_lanka": "sri lankan",
+        "nepal": "nepalese",
+        "afghanistan": "afghan",
+        "iraq": "iraqi",
+        "ethiopia": "ethiopian",
+        "nigeria": "nigerian",
+        "south_africa": "south african",
+        "new_zealand": "new zealander",
+        "samoa": "samoan",
+        "tonga": "tongan",
+        "fiji": "fijian",
+        "paraguay": "paraguayan",
+        "peru": "peruvian",
+        "bolivia": "bolivian",
+        "mexico": "mexican",
+    }
+    return eponyms.get(country, country)
+
+
+def get_background_image(lang_code, size, word="hello", used_images=None):
     """
     Find a random image for the language and resize/crop it to fill the size.
     Ensures that the same image is NEVER repeated by moving used images to a .used folder.
     """
     if used_images is None:
         used_images = set()
+
+    # Use hello_assets for 'hello', love_assets for 'love'
+    word_clean = word.lower().strip().strip("!").strip(".")
+    if word_clean == "hello":
+        assets_dir = "hello_assets"
+    elif word_clean == "love":
+        assets_dir = "love_assets"
+    else:
+        # Fallback to icon_assets or one of the new ones
+        assets_dir = "love_assets"
 
     country = LANG_TO_COUNTRY.get(lang_code)
     img_path = None
@@ -542,9 +632,9 @@ def get_font_for_lang(lang_code, text, preferred_path):
     """
     # Mapping of language codes to specific Noto fonts
     FONT_MAP = {
-        "zh": "fonts/noto-sc.ttf",
-        "ja": "fonts/noto-sc.ttf",
-        "ko": "fonts/noto-sc.ttf",
+        "zh": "fonts/NotoSansSC-Regular.otf",
+        "ja": "fonts/NotoSansJP-Regular.otf",
+        "ko": "fonts/NotoSansKR-Regular.otf",
         "my": "fonts/NotoSansMyanmar-Regular.ttf",
         "hi": "fonts/NotoSansDevanagari-Regular.ttf",
         "mr": "fonts/NotoSansDevanagari-Regular.ttf",
@@ -623,13 +713,13 @@ def get_font_for_lang(lang_code, text, preferred_path):
         ("\u0530", "\u058f", "fonts/NotoSansArmenian-Regular.ttf"),
         ("\u1780", "\u17ff", "fonts/NotoSansKhmer-Regular.ttf"),
         # CJK
-        ("\u4e00", "\u9fff", "fonts/noto-sc.ttf"),
-        ("\u3400", "\u4dbf", "fonts/noto-sc.ttf"),
-        ("\u3040", "\u309f", "fonts/noto-sc.ttf"),
-        ("\u30a0", "\u30ff", "fonts/noto-sc.ttf"),
-        ("\uac00", "\ud7af", "fonts/noto-sc.ttf"),
-        ("\u3000", "\u303f", "fonts/noto-sc.ttf"),
-        ("\uff00", "\uffef", "fonts/noto-sc.ttf"),
+        ("\u4e00", "\u9fff", "fonts/NotoSansSC-Regular.otf"),
+        ("\u3400", "\u4dbf", "fonts/NotoSansSC-Regular.otf"),
+        ("\u3040", "\u309f", "fonts/NotoSansJP-Regular.otf"),
+        ("\u30a0", "\u30ff", "fonts/NotoSansJP-Regular.otf"),
+        ("\uac00", "\ud7af", "fonts/NotoSansKR-Regular.otf"),
+        ("\u3000", "\u303f", "fonts/NotoSansSC-Regular.otf"),
+        ("\uff00", "\uffef", "fonts/NotoSansSC-Regular.otf"),
     ]
 
     for char in text:
@@ -667,26 +757,49 @@ def get_font_for_lang(lang_code, text, preferred_path):
     return None
 
 
-def get_actual_text_width(text, lang_code, preferred_font_path, font_size):
+def get_actual_text_width(
+    text, lang_code, preferred_font_path, font_size, char_by_char=False
+):
     """
-    Calculate the actual rendered width of text using PIL's textbbox.
-    Returns 0 if no font is found.
+    Calculate the actual rendered width of text using PIL's textbbox or textlength.
+    Returns (width, bbox_left, bbox_right).
+    Returns (0, 0, 0) if no font is found.
     """
     font_path = get_font_for_lang(lang_code, text, preferred_font_path)
     if not font_path:
-        return 0
+        return 0, 0, 0
     try:
         font = ImageFont.truetype(font_path, font_size)
     except OSError as e:
         print(f"Error loading font: {font_path} for text '{text}' ({lang_code})")
         raise e
+
     # Create a temporary draw object to measure text
     temp_image = Image.new("RGB", (1, 1))
     draw = ImageDraw.Draw(temp_image)
-    bbox = draw.textbbox((0, 0), text, font=font)
-    # bbox returns (left, top, right, bottom)
-    text_width = bbox[2] - bbox[0]
-    return text_width
+
+    if char_by_char:
+        if not text:
+            return 0, 0, 0
+        # Sum of individual character lengths (as used in character-by-character rendering)
+        # We need to calculate the actual ink bounds
+        w_advance = 0
+        b_left = 0
+        b_right = 0
+        for i, char in enumerate(text):
+            char_bbox = draw.textbbox((w_advance, 0), char, font=font)
+            if i == 0:
+                b_left = char_bbox[0]
+            if i == len(text) - 1:
+                b_right = char_bbox[2]
+            w_advance += draw.textlength(char, font=font)
+
+        return b_right - b_left, b_left, b_right
+    else:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        # bbox returns (left, top, right, bottom)
+        text_width = bbox[2] - bbox[0]
+        return text_width, bbox[0], bbox[2]
 
 
 def create_gif(params):
@@ -706,7 +819,7 @@ def create_gif(params):
     background_color = params.background_color
     font_size = params.font_size
     languages = params.languages
-    use_images = params.use_images
+    use_icons = params.use_icons
 
     # Hard-coded width
     width, height = (int(x) for x in params.size.split(","))
@@ -736,19 +849,23 @@ def create_gif(params):
         config_key = (t, l)
         if config_key not in text_configs:
             f_size = base_font_size
-            t_width = get_actual_text_width(t, l, font_path, f_size)
+            t_width, b_left, b_right = get_actual_text_width(
+                t, l, font_path, f_size, char_by_char=params.use_flag_colors
+            )
 
             # If text cannot be rendered at all, mark it to be skipped
             if t_width == 0 and t.strip():
-                text_configs[config_key] = (0, 0)
+                text_configs[config_key] = (0, 0, 0, 0)
                 continue
 
             # Reduce font size until it fits (with 5% padding on each side)
             while t_width > max_width * 0.9 and f_size > 8:
                 f_size -= 2
-                t_width = get_actual_text_width(t, l, font_path, f_size)
+                t_width, b_left, b_right = get_actual_text_width(
+                    t, l, font_path, f_size, char_by_char=params.use_flag_colors
+                )
 
-            text_configs[config_key] = (f_size, t_width)
+            text_configs[config_key] = (f_size, t_width, b_left, b_right)
 
     frames = []
     used_images_paths = set()
@@ -757,11 +874,14 @@ def create_gif(params):
         text, lang_code, preferred_font_path, default_font_color, bg_color
     ):
         # Use the pre-calculated font size and width for this specific text and language
-        font_size, text_width = text_configs[(text, lang_code)]
+        font_size, text_width, b_left, b_right = text_configs[(text, lang_code)]
 
-        if use_images:
+        if use_icons:
             image, img_path = get_background_image(
-                lang_code, (max_width, height), used_images=used_images_paths
+                lang_code,
+                (max_width, height),
+                word=params.text or "hello",
+                used_images=used_images_paths,
             )
             if img_path:
                 used_images_paths.add(img_path)
@@ -776,7 +896,8 @@ def create_gif(params):
 
         font = ImageFont.truetype(actual_font_path, font_size)
 
-        x = max_width / 2 - text_width / 2
+        # Center both the origin and the ink
+        x = (max_width - (b_left + b_right)) / 2
         y = (height - font_size) / 2  # Center vertically
 
         # Get actual bounding box for contrast calculation
@@ -785,7 +906,7 @@ def create_gif(params):
         if params.use_flag_colors:
             char_colors = get_flag_colors_for_text(text, lang_code)
             # For flag colors, we still want a stroke for contrast if background is complex
-            if use_images or params.smart_color:
+            if use_icons or params.smart_color:
                 _, outline_color = get_contrast_colors(
                     image, bbox, default_color=default_font_color
                 )
@@ -810,7 +931,7 @@ def create_gif(params):
                 char_w = draw.textlength(char, font=font)
                 current_x += char_w
         else:
-            if use_images or params.smart_color:
+            if use_icons or params.smart_color:
                 color, outline_color = get_contrast_colors(
                     image, bbox, default_color=default_font_color
                 )
@@ -920,9 +1041,10 @@ def main():
         "--gif_path", default="output.gif", help="Path to save the output GIF"
     )
     parser.add_argument(
-        "--use_images",
+        "--use_icons",
+        "--use_icons",
         action="store_true",
-        help="Use country-specific background images",
+        help="Use country-specific icon background images",
     )
     parser.add_argument(
         "--smart_color",

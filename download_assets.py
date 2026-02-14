@@ -84,20 +84,20 @@ def download_image(query, target_path):
 
 
 tasks = [
-    ("Hallgrimskirkja", "picture_assets/iceland/hallgrimskirkja.jpg"),
-    ("Skogafoss", "picture_assets/iceland/skogafoss.jpg"),
-    ("Cliffs of Moher", "picture_assets/ireland/cliffs_of_moher.jpg"),
-    ("Rock of Cashel", "picture_assets/ireland/rock_of_cashel.jpg"),
-    ("Angkor Wat", "picture_assets/cambodia/angkor_wat.jpg"),
-    ("Shwedagon Pagoda", "picture_assets/myanmar/shwedagon.jpg"),
-    ("Table Mountain", "picture_assets/south_africa/table_mountain.jpg"),
-    ("Milford Sound", "picture_assets/new_zealand/milford_sound.jpg"),
-    ("Zuma Rock", "picture_assets/nigeria/zuma_rock.jpg"),
-    ("Lalibela Church", "picture_assets/ethiopia/lalibela.jpg"),
-    ("Edinburgh Castle", "picture_assets/united_kingdom/edinburgh_castle.jpg"),
-    ("Snowdonia National Park", "picture_assets/united_kingdom/snowdonia.jpg"),
-    ("Mount Ararat Khor Virap", "picture_assets/armenia/khor_virap.jpg"),
-    ("Gergeti Trinity Church", "picture_assets/georgia/gergeti.jpg"),
+    ("Hallgrimskirkja", "hello_assets/iceland/hallgrimskirkja.jpg"),
+    ("Skogafoss", "hello_assets/iceland/skogafoss.jpg"),
+    ("Cliffs of Moher", "hello_assets/ireland/cliffs_of_moher.jpg"),
+    ("Rock of Cashel", "hello_assets/ireland/rock_of_cashel.jpg"),
+    ("Angkor Wat", "hello_assets/cambodia/angkor_wat.jpg"),
+    ("Shwedagon Pagoda", "hello_assets/myanmar/shwedagon.jpg"),
+    ("Table Mountain", "hello_assets/south_africa/table_mountain.jpg"),
+    ("Milford Sound", "hello_assets/new_zealand/milford_sound.jpg"),
+    ("Zuma Rock", "hello_assets/nigeria/zuma_rock.jpg"),
+    ("Lalibela Church", "hello_assets/ethiopia/lalibela.jpg"),
+    ("Edinburgh Castle", "hello_assets/united_kingdom/edinburgh_castle.jpg"),
+    ("Snowdonia National Park", "hello_assets/united_kingdom/snowdonia.jpg"),
+    ("Mount Ararat Khor Virap", "hello_assets/armenia/khor_virap.jpg"),
+    ("Gergeti Trinity Church", "hello_assets/georgia/gergeti.jpg"),
 ]
 
 for query, path in tasks:

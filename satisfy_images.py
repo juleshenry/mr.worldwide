@@ -118,67 +118,66 @@ def satisfy():
     with open("translations.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    assets_dir = "picture_assets"
-    if not os.path.exists(assets_dir):
-        os.makedirs(assets_dir)
+    for word in ["hello", "love"]:
+        assets_dir = f"{word}_assets"
+        if not os.path.exists(assets_dir):
+            os.makedirs(assets_dir)
 
-    # Track how many images we need to ADD per country
-    needed_additions = {}
+        # Track how many images we need to ADD per country
+        needed_additions = {}
 
-    for word, translations in data.items():
-        # Group by translated string to handle duplicates like "Amor"
-        string_to_langs = {}
-        for lang, trans_text in translations.items():
-            if trans_text not in string_to_langs:
-                string_to_langs[trans_text] = []
-            string_to_langs[trans_text].append(lang)
+        if word in data:
+            translations = data[word]
+            # Group by translated string to handle duplicates like "Amor"
+            string_to_langs = {}
+            for lang, trans_text in translations.items():
+                if trans_text not in string_to_langs:
+                    string_to_langs[trans_text] = []
+                string_to_langs[trans_text].append(lang)
 
-        for trans_text, langs in string_to_langs.items():
-            count_needed = len(langs)
-            countries = []
-            for l in langs:
-                c = LANG_TO_COUNTRY.get(l, "global_default")
-                countries.append(c)
+            for trans_text, langs in string_to_langs.items():
+                count_needed = len(langs)
+                countries = []
+                for l in langs:
+                    c = LANG_TO_COUNTRY.get(l, "global")
+                    countries.append(c)
 
-            # Count current images in these countries
-            current_total = 0
-            for c in set(countries):
-                c_dir = os.path.join(assets_dir, c)
-                if os.path.exists(c_dir):
-                    current_total += len(glob.glob(os.path.join(c_dir, "*.*")))
+                # Count current images in these countries
+                current_total = 0
+                for c in set(countries):
+                    c_dir = os.path.join(assets_dir, c)
+                    if os.path.exists(c_dir):
+                        current_total += len(glob.glob(os.path.join(c_dir, "*.*")))
 
-            if current_total < count_needed:
-                gap = count_needed - current_total
-                # Distribute gap among the countries (prefer the first one found for simplicity)
-                primary_country = countries[0]
-                needed_additions[primary_country] = max(
-                    needed_additions.get(primary_country, 0), gap
-                )
+                if current_total < count_needed:
+                    gap = count_needed - current_total
+                    # Distribute gap among the countries
+                    primary_country = countries[0]
+                    needed_additions[primary_country] = max(
+                        needed_additions.get(primary_country, 0), gap
+                    )
 
-    # Now handle individual languages that might just be missing a folder entirely
-    for lang, country in LANG_TO_COUNTRY.items():
-        c_dir = os.path.join(assets_dir, country)
-        if not os.path.exists(c_dir) or not glob.glob(os.path.join(c_dir, "*.*")):
-            if country not in needed_additions:
-                needed_additions[country] = 1
+        # Now handle individual languages that might just be missing a folder entirely
+        for lang, country in LANG_TO_COUNTRY.items():
+            c_dir = os.path.join(assets_dir, country)
+            if not os.path.exists(c_dir) or not glob.glob(os.path.join(c_dir, "*.*")):
+                if country not in needed_additions:
+                    needed_additions[country] = 1
 
-    # Apply additions
-    for country, count in needed_additions.items():
-        c_dir = os.path.join(assets_dir, country)
-        if not os.path.exists(c_dir):
-            os.makedirs(c_dir)
-            print(f"Created directory: {c_dir}")
+        # Apply additions
+        for country, count in needed_additions.items():
+            c_dir = os.path.join(assets_dir, country)
+            if not os.path.exists(c_dir):
+                os.makedirs(c_dir)
+                print(f"Created directory: {c_dir}")
 
-        existing = len(glob.glob(os.path.join(c_dir, "*.*")))
-        # We need to make sure the folder has AT LEAST the count we calculated
-        # Actually, the logic above calculates the gap.
-        # Let's just ensure the folder has 'count' images if it was missing some.
-        to_create = count
-        for _ in range(to_create):
-            dummy_path = os.path.join(c_dir, f"dummy_{uuid.uuid4().hex[:8]}.jpg")
-            with open(dummy_path, "w") as f:
-                f.write("dummy")
-            print(f"Created dummy image: {dummy_path}")
+            # We need to make sure the folder has AT LEAST one image
+            to_create = count
+            for _ in range(to_create):
+                dummy_path = os.path.join(c_dir, f"dummy_{uuid.uuid4().hex[:8]}.jpg")
+                with open(dummy_path, "w") as f:
+                    f.write("dummy")
+                print(f"Created dummy image in {word}_assets: {dummy_path}")
 
 
 if __name__ == "__main__":

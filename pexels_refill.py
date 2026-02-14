@@ -139,8 +139,89 @@ LANG_TO_COUNTRY = {
 }
 
 
-def get_needed_counts():
-    assets_dir = "picture_assets"
+def country_to_eponym(country):
+    eponyms = {
+        "united_states": "american",
+        "spain": "spanish",
+        "france": "french",
+        "germany": "german",
+        "italy": "italian",
+        "brazil": "brazilian",
+        "russia": "russian",
+        "japan": "japanese",
+        "south_korea": "korean",
+        "china": "chinese",
+        "india": "indian",
+        "saudi_arabia": "saudi",
+        "bangladesh": "bangladeshi",
+        "indonesia": "indonesian",
+        "vietnam": "vietnamese",
+        "turkey": "turkish",
+        "pakistan": "pakistani",
+        "poland": "polish",
+        "ukraine": "ukrainian",
+        "netherlands": "dutch",
+        "greece": "greek",
+        "thailand": "thai",
+        "sweden": "swedish",
+        "denmark": "danish",
+        "finland": "finnish",
+        "norway": "norwegian",
+        "israel": "israeli",
+        "malaysia": "malaysian",
+        "hungary": "hungarian",
+        "czech_republic": "czech",
+        "romania": "romanian",
+        "slovakia": "slovak",
+        "bulgaria": "bulgarian",
+        "croatia": "croatian",
+        "serbia": "serbian",
+        "slovenia": "slovenian",
+        "estonia": "estonian",
+        "latvia": "latvian",
+        "lithuania": "lithuanian",
+        "iran": "iranian",
+        "kenya": "kenyan",
+        "philippines": "filipino",
+        "iceland": "icelandic",
+        "ireland": "irish",
+        "republic_of_ireland": "irish",
+        "united_kingdom": "british",
+        "luxembourg": "luxembourgish",
+        "malta": "maltese",
+        "albania": "albanian",
+        "armenia": "armenian",
+        "azerbaijan": "azerbaijani",
+        "georgia": "georgian",
+        "kazakhstan": "kazakh",
+        "kyrgyzstan": "kyrgyz",
+        "tajikistan": "tajik",
+        "turkmenistan": "turkmen",
+        "uzbekistan": "uzbek",
+        "mongolia": "mongolian",
+        "myanmar": "burmese",
+        "cambodia": "cambodian",
+        "laos": "laotian",
+        "sri_lanka": "sri lankan",
+        "nepal": "nepalese",
+        "afghanistan": "afghan",
+        "iraq": "iraqi",
+        "ethiopia": "ethiopian",
+        "nigeria": "nigerian",
+        "south_africa": "south african",
+        "new_zealand": "new zealander",
+        "samoa": "samoan",
+        "tonga": "tongan",
+        "fiji": "fijian",
+        "paraguay": "paraguayan",
+        "peru": "peruvian",
+        "bolivia": "bolivian",
+        "mexico": "mexican",
+    }
+    return eponyms.get(country, country)
+
+
+def get_needed_counts(word):
     translations_file = "translations.json"
 
     total_needed = {}
@@ -154,7 +235,8 @@ def get_needed_counts():
     with open(translations_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    for word, translations in data.items():
+    if word in data:
+        translations = data[word]
         # Mirror the deduplication logic in mr-worldwide.py
         seen_texts = set()
         for lang, trans_text in translations.items():
@@ -182,9 +264,9 @@ def is_valid_image(path):
         return False
 
 
-def get_missing_counts():
-    assets_dir = "picture_assets"
-    needed = get_needed_counts()
+def get_missing_counts(word):
+    assets_dir = f"{word}_assets"
+    needed = get_needed_counts(word)
 
     # Clean up invalid images
     if os.path.exists(assets_dir):
@@ -217,65 +299,100 @@ def get_missing_counts():
     return missing
 
 
-def download_from_pexels(country, api_key, count=1):
-    print(f"Searching Pexels for {country} ({count} images needed)...")
+def is_duplicate_globally(assets_dir, filename):
+    """Check if the filename exists anywhere in the assets_dir."""
+    for root, dirs, files in os.walk(assets_dir):
+        if filename in files:
+            return True
+    return False
+
+
+def download_from_pexels(country, api_key, word="hello", count=1):
+    print(f"Searching Pexels for {word} in {country} ({count} images needed)...")
     headers = {"Authorization": api_key}
-    # Using a more restrictive query to avoid mixed-up results
-    # landmark in {country} is a safe bet
-    query = f"landmark in {country.replace('_', ' ')}"
-    url = f"https://api.pexels.com/v1/search?query={query}&orientation=landscape&per_page={count}"
 
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
+    country_name = country.replace("_", " ")
+    if word.lower() == "hello":
+        # More specific queries to avoid generic cultural heritage results
+        queries = [
+            f"{country_name} landmarks",
+            f"{country_name} culture",
+            f"cultural heritage {country_name}",
+        ]
+        assets_dir = "hello_assets"
+    elif word.lower() == "love":
+        eponym = country_to_eponym(country)
+        queries = [f"{eponym} couple", f"romance {country_name}"]
+        assets_dir = "love_assets"
+    else:
+        queries = [country_name]
+        assets_dir = "icon_assets"
 
-        if not data.get("photos"):
-            print(f"No photos found for {country}")
-            return 0
+    # Request more images than needed to allow skipping duplicates
+    search_count = max(count + 10, 20)
 
-        downloaded = 0
-        for photo in data["photos"]:
-            img_url = photo["src"]["large2x"]
+    downloaded = 0
+    for query in queries:
+        if downloaded >= count:
+            break
 
-            # Determine filename
-            ext = img_url.split(".")[-1].split("?")[0]
-            if ext not in ["jpg", "jpeg", "png", "webp"]:
-                ext = "jpg"
+        url = f"https://api.pexels.com/v1/search?query={query}&orientation=landscape&per_page={search_count}"
 
-            filename = f"{photo['id']}.{ext}"
-            print(f"ID: {photo['id']} for {country}")
-            target_path = os.path.join("picture_assets", country, filename)
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            data = response.json()
 
-            if os.path.exists(target_path):
+            if not data.get("photos"):
                 continue
 
-            print(f"Downloading {img_url} to {target_path}...")
-            img_response = requests.get(img_url)
-            img_response.raise_for_status()
+            # Shuffle photos to avoid always picking the first one
+            photos = data["photos"]
+            random.shuffle(photos)
 
-            with open(target_path, "wb") as f:
-                f.write(img_response.content)
+            for photo in photos:
+                if downloaded >= count:
+                    break
 
-            if is_valid_image(target_path):
-                downloaded += 1
-            else:
-                print(f"Downloaded image is invalid, removing: {target_path}")
-                os.remove(target_path)
+                img_url = photo["src"]["large2x"]
 
-        if downloaded > 0:
-            # Optional: Remove dummy files if they exist
-            path = os.path.join("picture_assets", country)
-            for f in os.listdir(path):
-                if f.startswith("dummy_"):
-                    os.remove(os.path.join(path, f))
-                    print(f"Removed dummy file: {f}")
+                # Determine filename
+                ext = img_url.split(".")[-1].split("?")[0]
+                if ext not in ["jpg", "jpeg", "png", "webp"]:
+                    ext = "jpg"
 
-        return downloaded
+                filename = f"{photo['id']}.{ext}"
 
-    except Exception as e:
-        print(f"Error processing {country}: {e}")
-        return 0
+                # Check for duplicates locally and globally
+                if is_duplicate_globally(assets_dir, filename):
+                    continue
+
+                target_path = os.path.join(assets_dir, country, filename)
+                print(f"Downloading {img_url} to {target_path} (Query: {query})...")
+                img_response = requests.get(img_url)
+                img_response.raise_for_status()
+
+                with open(target_path, "wb") as f:
+                    f.write(img_response.content)
+
+                if is_valid_image(target_path):
+                    downloaded += 1
+                else:
+                    print(f"Downloaded image is invalid, removing: {target_path}")
+                    os.remove(target_path)
+
+        except Exception as e:
+            print(f"Error processing {country} with query {query}: {e}")
+
+    if downloaded > 0:
+        # Optional: Remove dummy files if they exist
+        path = os.path.join(assets_dir, country)
+        for f in os.listdir(path):
+            if f.startswith("dummy_"):
+                os.remove(os.path.join(path, f))
+                print(f"Removed dummy file: {f}")
+
+    return downloaded
 
 
 def main():
@@ -290,33 +407,37 @@ def main():
         print("Please set PEXELS_API_KEY in .1nv")
         return
 
-    assets_dir = "picture_assets"
-    if args.clear and os.path.exists(assets_dir):
-        print("Clearing all existing images...")
-        for country in os.listdir(assets_dir):
-            country_path = os.path.join(assets_dir, country)
-            if os.path.isdir(country_path):
-                for f in os.listdir(country_path):
-                    if not f.startswith("."):
-                        os.remove(os.path.join(country_path, f))
+    words = ["hello", "love"]
 
-    missing = get_missing_counts()
-    print(f"Needed counts: {get_needed_counts()}")
-    if not missing:
-        print("No missing backgrounds found.")
-        return
+    for word in words:
+        assets_dir = f"{word}_assets"
+        if args.clear and os.path.exists(assets_dir):
+            print(f"Clearing all existing images in {assets_dir}...")
+            for country in os.listdir(assets_dir):
+                country_path = os.path.join(assets_dir, country)
+                if os.path.isdir(country_path):
+                    for f in os.listdir(country_path):
+                        if not f.startswith("."):
+                            os.remove(os.path.join(country_path, f))
 
-    print(
-        f"Found {len(missing)} countries needing refills: {', '.join(f'{k}:{v}' for k, v in missing.items())}"
-    )
+        missing = get_missing_counts(word)
+        if not missing:
+            print(f"No missing backgrounds found for {word}.")
+            continue
 
-    for country, count in missing.items():
-        downloaded = download_from_pexels(country, api_key, count)
-        if downloaded > 0:
-            print(f"Successfully refilled {downloaded} images for {country}")
-            time.sleep(1)  # Be respectful to the API
-        else:
-            print(f"Failed to refill {country}")
+        print(
+            f"Found {len(missing)} countries needing refills for {word}: {', '.join(f'{k}:{v}' for k, v in missing.items())}"
+        )
+
+        for country, count in missing.items():
+            downloaded = download_from_pexels(country, api_key, word, count)
+            if downloaded > 0:
+                print(
+                    f"Successfully refilled {downloaded} images for {country} ({word})"
+                )
+                time.sleep(1)  # Be respectful to the API
+            else:
+                print(f"Failed to refill {country} ({word})")
 
 
 if __name__ == "__main__":

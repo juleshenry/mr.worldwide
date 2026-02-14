@@ -122,7 +122,9 @@ all_countries = set(LANG_TO_COUNTRY.values())
 unused = all_countries - used_countries
 print(f"Unused countries: {unused}")
 
-for country in all_countries:
-    path = os.path.join("picture_assets", country)
-    if not os.path.exists(path) or not os.listdir(path):
-        print(f"Empty or missing: {country}")
+for word in ["hello", "love"]:
+    print(f"\nChecking {word}_assets:")
+    for country in all_countries:
+        path = os.path.join(f"{word}_assets", country)
+        if not os.path.exists(path) or not os.listdir(path):
+            print(f"Empty or missing: {country}")

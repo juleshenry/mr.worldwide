@@ -16,4 +16,5 @@ def check_images(directory):
 
 
 if __name__ == "__main__":
-    check_images("picture_assets")
+    check_images("hello_assets")
+    check_images("love_assets")

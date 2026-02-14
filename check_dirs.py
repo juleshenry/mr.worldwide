@@ -109,9 +109,11 @@ LANG_TO_COUNTRY = {
     "yua": "mexico",
 }
 
-for country in set(LANG_TO_COUNTRY.values()):
-    path = os.path.join("picture_assets", country)
-    if not os.path.exists(path):
-        print(f"Directory missing: {country}")
-    elif not os.listdir(path):
-        print(f"Directory empty: {country}")
+for word in ["hello", "love"]:
+    print(f"\nChecking {word}_assets:")
+    for country in set(LANG_TO_COUNTRY.values()):
+        path = os.path.join(f"{word}_assets", country)
+        if not os.path.exists(path):
+            print(f"Directory missing: {country}")
+        elif not os.listdir(path):
+            print(f"Directory empty: {country}")

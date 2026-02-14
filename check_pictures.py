@@ -2,7 +2,7 @@ import json
 import os
 import glob
 
-# Mapping from ISO 639-1 language codes to country folder names in picture_assets
+# Mapping from ISO 639-1 language codes to country folder names in icon_assets
 LANG_TO_COUNTRY = {
     "en": "united_states",
     "es": "spain",
@@ -114,7 +114,6 @@ LANG_TO_COUNTRY = {
 
 
 def check_pictures():
-    assets_dir = "picture_assets"
     translations_file = "translations.json"
 
     if not os.path.exists(translations_file):
@@ -124,22 +123,23 @@ def check_pictures():
     with open(translations_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Pre-calculate image counts per country folder
-    country_counts = {}
-    for country in set(LANG_TO_COUNTRY.values()):
-        path = os.path.join(assets_dir, country)
-        if os.path.exists(path):
-            # Only count non-dummy files
-            files = [f for f in os.listdir(path) if not f.startswith("dummy_")]
-            country_counts[country] = len(files)
-        else:
-            country_counts[country] = 0
-
     print(f"{'WORD':<10} | {'TRANSLATION':<15} | {'STATUS'}")
     print("-" * 50)
 
     any_missing = False
     for word, translations in data.items():
+        assets_dir = f"{word}_assets"
+        # Pre-calculate image counts per country folder for this word
+        country_counts = {}
+        for country in set(LANG_TO_COUNTRY.values()):
+            path = os.path.join(assets_dir, country)
+            if os.path.exists(path):
+                # Only count non-dummy files
+                files = [f for f in os.listdir(path) if not f.startswith("dummy_")]
+                country_counts[country] = len(files)
+            else:
+                country_counts[country] = 0
+
         # Group by unique translated string to handle duplicates requiring n-images
         string_groups = {}
         for lang, trans_text in translations.items():

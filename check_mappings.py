@@ -1,7 +1,7 @@
 import json
 import os
 
-# Mapping from ISO 639-1 language codes to country folder names in picture_assets
+# Mapping from ISO 639-1 language codes to country folder names in icon_assets
 LANG_TO_COUNTRY = {
     "en": "united_states",
     "es": "spain",
