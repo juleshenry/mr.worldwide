@@ -56,22 +56,85 @@ LANG_TO_COUNTRY = {
     "fa": "iran",
     "sw": "kenya",
     "tl": "philippines",
+    "is": "iceland",
+    "ga": "ireland",
+    "cy": "united_kingdom",
+    "gd": "united_kingdom",
+    "lb": "luxembourg",
+    "mt": "malta",
+    "sq": "albania",
+    "hy": "armenia",
+    "az": "azerbaijan",
+    "ka": "georgia",
+    "kk": "kazakhstan",
+    "ky": "kyrgyzstan",
+    "tg": "tajikistan",
+    "tk": "turkmenistan",
+    "uz": "uzbekistan",
+    "mn": "mongolia",
+    "bo": "china",
+    "my": "myanmar",
+    "km": "cambodia",
+    "lo": "laos",
+    "ml": "india",
+    "kn": "india",
+    "si": "sri_lanka",
+    "ne": "nepal",
+    "ps": "afghanistan",
+    "ku": "iraq",
+    "am": "ethiopia",
+    "yo": "nigeria",
+    "ig": "nigeria",
+    "zu": "south_africa",
+    "xh": "south_africa",
+    "af": "south_africa",
+    "mi": "new_zealand",
+    "haw": "united_states",
+    "sm": "samoa",
+    "to": "tonga",
+    "fj": "fiji",
+    "eo": "global",
+    "ca": "spain",
+    "gl": "spain",
+    "eu": "spain",
+    "oc": "france",
+    "br": "france",
+    "co": "france",
+    "fy": "netherlands",
+    "hsb": "germany",
+    "csb": "poland",
+    "tt": "russia",
+    "ba": "russia",
+    "ce": "russia",
+    "cv": "russia",
+    "udm": "russia",
+    "mhr": "russia",
+    "sah": "russia",
+    "gn": "paraguay",
+    "qu": "peru",
+    "ay": "bolivia",
+    "nah": "mexico",
+    "yua": "mexico",
 }
 
-def get_contrast_color(image, region):
+def get_contrast_colors(image, region):
     """
-    Calculate the average brightness of a region and return white or black for max contrast.
+    Calculate the average brightness of a region and return (text_color, outline_color)
+    for max contrast.
     region is (left, top, right, bottom)
     """
     if region[2] <= region[0] or region[3] <= region[1]:
-        return (255, 255, 255)
+        return (255, 255, 255), (0, 0, 0)
     
     crop = image.crop(region)
     stat = ImageStat.Stat(crop.convert("L"))
     brightness = stat.mean[0]
     
-    # Threshold for brightness is usually 128 (middle of 0-255)
-    return (0, 0, 0) if brightness > 127 else (255, 255, 255)
+    # Threshold for brightness is 127
+    if brightness > 127:
+        return (0, 0, 0), (255, 255, 255)
+    else:
+        return (255, 255, 255), (0, 0, 0)
 
 def get_background_image(lang_code, size, assets_dir="picture_assets"):
     """
@@ -254,22 +317,30 @@ def create_gif(params):
     if text:
         text_array = get_trans(text, languages=languages)
 
-    # Calculate actual maximum text width for center alignment
-    actual_font_size = font_size if font_size != 32 else height // 4
-    text_widths = {}
-    for t, l in text_array:
-        if t not in text_widths:
-            text_widths[t] = get_actual_text_width(t, font_path, actual_font_size)
-
+    # Calculate actual font size and width for each translation to ensure it fits
+    base_font_size = font_size if font_size != 32 else height // 4
+    text_configs = {} # text -> (font_size, width)
+    
     max_width = width
-    if not use_images:
-        # For solid background, we might want to expand width to fit longest text
-        max_text_width = max(text_widths.values()) if text_widths else 0
-        max_width = max(width, int(max_text_width * 1.1))
+    
+    for t, l in text_array:
+        if t not in text_configs:
+            f_size = base_font_size
+            t_width = get_actual_text_width(t, font_path, f_size)
+            
+            # Reduce font size until it fits (with 5% padding on each side)
+            while t_width > max_width * 0.9 and f_size > 8:
+                f_size -= 2
+                t_width = get_actual_text_width(t, font_path, f_size)
+            
+            text_configs[t] = (f_size, t_width)
 
     frames = []
 
-    def create_frame(text, lang_code, font_path, font_size, default_font_color, bg_color):
+    def create_frame(text, lang_code, font_path, default_font_color, bg_color):
+        # Use the pre-calculated font size and width for this specific text
+        font_size, text_width = text_configs[text]
+
         if use_images:
             image = get_background_image(lang_code, (max_width, height))
         else:
@@ -278,18 +349,22 @@ def create_gif(params):
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font_path, font_size)
         
-        text_width = text_widths[text]
         x = max_width / 2 - text_width / 2
         y = (height - font_size) / 2 # Center vertically
         
+        # Get actual bounding box for contrast calculation
+        bbox = draw.textbbox((x, y), text, font=font)
+
         if use_images:
-            # Calculate region for contrast check
-            region = (int(x), int(y), int(x + text_width), int(y + font_size))
-            color = get_contrast_color(image, region)
+            color, outline_color = get_contrast_colors(image, bbox)
+            # Add a stroke for maximum contrast
+            stroke_width = max(2, font_size // 15)
         else:
             color = default_font_color
+            outline_color = None
+            stroke_width = 0
             
-        draw.text((x, y), text, font=font, fill=color)
+        draw.text((x, y), text, font=font, fill=color, stroke_width=stroke_width, stroke_fill=outline_color)
         return image
 
     for t, l in text_array:
@@ -297,7 +372,6 @@ def create_gif(params):
             t,
             l,
             font_path,
-            actual_font_size,
             font_color_pref,
             background_color,
         )

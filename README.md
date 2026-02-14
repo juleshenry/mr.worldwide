@@ -26,9 +26,23 @@ MR. WORLDWIDE (Background Images & Smart Color):
 python3 mr-worldwide.py --text "Hello" --use_images --languages all --delay 500 --gif_path "mr_worldwide.gif"
 ```
 
+### Preset Examples
+To generate the specific "Hello" and "Love" GIFs:
+
+**Hello GIF:**
+```bash
+python3 mr-worldwide.py --text "Hello" --use_images --languages all --delay 500 --gif_path "hello.gif"
+```
+
+**Love GIF:**
+```bash
+python3 mr-worldwide.py --text "Love" --use_images --languages all --delay 500 --gif_path "love.gif"
+```
+
 ### Advanced Options
 - `--use_images`: Enables country-specific background images from `picture_assets/`.
 - `--smart_color_picker`: (Automatic when using images) Picks white or black text based on background luminance for maximum contrast.
+- **Dynamic Font Scaling**: (Automatic) Automatically shrinks font size for long translations to ensure they fit within the specified image width.
 
 **round-robin-sinosoidal**
 Start at A_0, emphasizing for interval-ms time, then cycle through all other options until A_1 for interval-ms time, then A_2, and so on.
