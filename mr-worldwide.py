@@ -1,18 +1,163 @@
 import argparse
-from PIL import Image, ImageDraw, ImageFont
+import os
+import random
+import glob
+import json
+from PIL import Image, ImageDraw, ImageFont, ImageStat
 from collections import defaultdict
 from typing import List
-import urllib
 
-# Make argostranslate optional for testing
-try:
-    from argos_hola import get_trans
-    import argostranslate.apis
-    HAS_ARGOS = True
-except ImportError:
-    HAS_ARGOS = False
-    def get_trans(text, languages=None):
-        return [text]
+# Mapping from ISO 639-1 language codes to country folder names in picture_assets
+LANG_TO_COUNTRY = {
+    "en": "united_states",
+    "es": "spain",
+    "fr": "france",
+    "de": "germany",
+    "it": "italy",
+    "pt": "brazil",
+    "ru": "russia",
+    "ja": "japan",
+    "ko": "south_korea",
+    "zh": "china",
+    "hi": "india",
+    "ar": "saudi_arabia",
+    "bn": "bangladesh",
+    "pa": "india",
+    "jv": "indonesia",
+    "te": "india",
+    "vi": "vietnam",
+    "mr": "india",
+    "ta": "india",
+    "tr": "turkey",
+    "ur": "pakistan",
+    "pl": "poland",
+    "uk": "ukraine",
+    "nl": "netherlands",
+    "el": "greece",
+    "th": "thailand",
+    "sv": "sweden",
+    "da": "denmark",
+    "fi": "finland",
+    "no": "norway",
+    "he": "israel",
+    "id": "indonesia",
+    "ms": "malaysia",
+    "hu": "hungary",
+    "cs": "czech_republic",
+    "ro": "romania",
+    "sk": "slovakia",
+    "bg": "bulgaria",
+    "hr": "croatia",
+    "sr": "serbia",
+    "sl": "slovenia",
+    "et": "estonia",
+    "lv": "latvia",
+    "lt": "lithuania",
+    "fa": "iran",
+    "sw": "kenya",
+    "tl": "philippines",
+}
+
+def get_contrast_color(image, region):
+    """
+    Calculate the average brightness of a region and return white or black for max contrast.
+    region is (left, top, right, bottom)
+    """
+    if region[2] <= region[0] or region[3] <= region[1]:
+        return (255, 255, 255)
+    
+    crop = image.crop(region)
+    stat = ImageStat.Stat(crop.convert("L"))
+    brightness = stat.mean[0]
+    
+    # Threshold for brightness is usually 128 (middle of 0-255)
+    return (0, 0, 0) if brightness > 127 else (255, 255, 255)
+
+def get_background_image(lang_code, size, assets_dir="picture_assets"):
+    """
+    Find a random image for the language and resize/crop it to fill the size.
+    """
+    country = LANG_TO_COUNTRY.get(lang_code)
+    img_path = None
+    
+    if country:
+        country_dir = os.path.join(assets_dir, country)
+        if os.path.exists(country_dir):
+            images = glob.glob(os.path.join(country_dir, "*.*"))
+            if images:
+                img_path = random.choice(images)
+    
+    if not img_path:
+        default_path = os.path.join(assets_dir, "global_default.jpg")
+        if os.path.exists(default_path):
+            img_path = default_path
+        else:
+            # Fallback to solid color if no image found
+            return Image.new("RGB", size, (128, 128, 128))
+
+    try:
+        img = Image.open(img_path).convert("RGB")
+        
+        # Resize and center crop (Cover strategy)
+        target_w, target_h = size
+        img_w, img_h = img.size
+        
+        aspect_target = target_w / target_h
+        aspect_img = img_w / img_h
+        
+        if aspect_img > aspect_target:
+            # Image is wider than target
+            new_h = target_h
+            new_w = int(aspect_img * new_h)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            left = (new_w - target_w) // 2
+            img = img.crop((left, 0, left + target_w, target_h))
+        else:
+            # Image is taller than target
+            new_w = target_w
+            new_h = int(new_w / aspect_img)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            top = (new_h - target_h) // 2
+            img = img.crop((0, top, target_w, top + target_h))
+            
+        return img
+    except Exception as e:
+        print(f"Error loading image {img_path}: {e}")
+        return Image.new("RGB", size, (128, 128, 128))
+
+# Static translations for Hello and Love
+def get_trans(text, languages=None):
+    """
+    Get hardcoded translations for "hello" and "love" from translations.json.
+    If text is not recognized, return just the original text.
+    """
+    try:
+        with open("translations.json", "r", encoding="utf-8") as f:
+            static_translations = json.load(f)
+    except Exception as e:
+        print(f"Error loading translations: {e}")
+        return [(text, "en")]
+
+    key = text.lower().strip().strip("!").strip(".")
+    if key in static_translations:
+        translations = static_translations[key]
+        res = []
+        if languages == "all" or languages is None or (isinstance(languages, list) and "all" in languages):
+            # Return all available translations for this word
+            for lang, trans_text in translations.items():
+                res.append((trans_text, lang))
+        else:
+            # Return only requested languages
+            if isinstance(languages, str):
+                languages = [languages]
+            
+            res.append((translations.get("en", text), "en"))
+            for lang in languages:
+                if lang in translations and lang != "en":
+                    res.append((translations[lang], lang))
+        return res
+    else:
+        return [(text, "en")]
 """
 ############################################
 ############################################
@@ -69,17 +214,6 @@ Text, Delay, FontColor, Font, BackgroundColor, ImagesArray
 lang_fudge = {"ja": 4.2, "ko": 4}
 
 
-def get_max_width(trans, languages, font_size) -> int:
-    """
-    estimates from language-specific fudge how big the strings will be in the GIF
-    """
-    mx = 0
-    for t, l in zip(trans, languages):
-        adj_len = len(t) * lang_fudge.get(l, 2.1) * font_size
-        mx = adj_len if mx < adj_len else mx
-    return int(mx)
-
-
 def get_actual_text_width(text, font_path, font_size):
     """
     Calculate the actual rendered width of text using PIL's textbbox
@@ -97,77 +231,82 @@ def get_actual_text_width(text, font_path, font_size):
 def create_gif(params):
     # PARAMS INPUT
     text = params.text
+    text_array = []
     if params.text_array:
-        text_array = params.text_array.split(",")
+        text_array = [(t.strip(), "und") for t in params.text_array.split(",")]
+    
     if not text and not text_array:
         raise ValueError("need text or text array")
 
     delay = params.delay
     sine_delay = params.sine_delay
-    font_color = params.font_color
+    font_color_pref = params.font_color
     font_path = params.font_path
     background_color = params.background_color
     font_size = params.font_size
     languages = params.languages
+    use_images = params.use_images
     
-    if HAS_ARGOS:
-        try:
-            all_langs = [x["code"] for x in argostranslate.apis.LibreTranslateAPI().languages()]
-            if "all" in languages:
-                languages = all_langs
-            if any(l not in all_langs for l in languages):
-                raise ValueError(f"Invalid lang supplied in following list: {languages}")
-        except urllib.error.HTTPError:
-            print('Unable to reach argos server. Translating disabled.')
-    else:
-        if text:
-            print('argostranslate not available. Translations disabled.')
-            languages = ['en']
-
-    
-
     # Hard-coded width
     width, height = (int(x) for x in params.size.split(","))
-    # Create GIF frames
+    
+    # Get translations if text is provided
+    if text:
+        text_array = get_trans(text, languages=languages)
+
+    # Calculate actual maximum text width for center alignment
+    actual_font_size = font_size if font_size != 32 else height // 4
+    text_widths = {}
+    for t, l in text_array:
+        if t not in text_widths:
+            text_widths[t] = get_actual_text_width(t, font_path, actual_font_size)
+
+    max_width = width
+    if not use_images:
+        # For solid background, we might want to expand width to fit longest text
+        max_text_width = max(text_widths.values()) if text_widths else 0
+        max_width = max(width, int(max_text_width * 1.1))
+
     frames = []
 
-    text_array = get_trans(text, languages=languages) if text else text_array
-
-    max_width = get_max_width(text_array, languages, font_size) if text else width
-    
-    # Calculate actual maximum text width for center alignment
-    # Use same font size calculation as in create_image for consistency
-    actual_font_size = height / 2
-    max_text_width = 0
-    text_widths = {}  # Cache text widths to avoid redundant calculations
-    for t in text_array:
-        if t not in text_widths:  # Avoid recalculating for duplicate text
-            text_widths[t] = get_actual_text_width(t, font_path, actual_font_size)
-        text_width = text_widths[t]
-        if text_width > max_text_width:
-            max_text_width = text_width
-
-    def create_image(text, font, font_color, background_color):
-        image = Image.new("RGB", (max_width, height), color=background_color)
+    def create_frame(text, lang_code, font_path, font_size, default_font_color, bg_color):
+        if use_images:
+            image = get_background_image(lang_code, (max_width, height))
+        else:
+            image = Image.new("RGB", (max_width, height), color=bg_color)
+            
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype(font, height / 2)
-        # Center text within the image canvas
-        text_width = text_widths[text]  # Use cached width
+        font = ImageFont.truetype(font_path, font_size)
+        
+        text_width = text_widths[text]
         x = max_width / 2 - text_width / 2
-        y = height // 8
-        draw.text((x, y), text, font=font, fill=font_color)
+        y = (height - font_size) / 2 # Center vertically
+        
+        if use_images:
+            # Calculate region for contrast check
+            region = (int(x), int(y), int(x + text_width), int(y + font_size))
+            color = get_contrast_color(image, region)
+        else:
+            color = default_font_color
+            
+        draw.text((x, y), text, font=font, fill=color)
         return image
 
-    # x= Image.new("RGB",(4,4,),color=(0,0,0,)).save()
-    for t in text_array:
-        image = create_image(
+    for t, l in text_array:
+        image = create_frame(
             t,
+            l,
             font_path,
-            font_color,
+            actual_font_size,
+            font_color_pref,
             background_color,
         )
-        # Overlay the background_image onto the image here
         frames.append(image)
+        
+    if not frames:
+        print("No frames created.")
+        return
+
     if not sine_delay:
         # Save the frames as a GIF
         frames[0].save(
@@ -181,10 +320,10 @@ def create_gif(params):
         print("SINE:" + str(sine_delay) + ", DELAY:" + str(delay))
         # Save the frames as a GIF
         new_frames = sine_adder(frames, sine_delay // delay)
-        frames[0].save(
+        new_frames[0].save(
             params.gif_path,
             save_all=True,
-            append_images=new_frames,
+            append_images=new_frames[1:],
             loop=0,  # 0 means infinite loop
             duration=delay,  # Time in milliseconds between frames
         )
@@ -239,6 +378,9 @@ def main():
     )
     parser.add_argument(
         "--languages", nargs="+", default="all", help="two letter code listˀ"
+    )
+    parser.add_argument(
+        "--use_images", action="store_true", help="Use country-specific background images"
     )
     params = parser.parse_args()
     params.font_color = tuple(map(int, params.font_color.split(",")))

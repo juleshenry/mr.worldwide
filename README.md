@@ -21,14 +21,14 @@ python3 mr-worldwide.py --size "256,256" --text hello! --font_path fonts/arial.t
 
 ```
 
-
-
-
-``` TODO
---round_robin true #true or false
---background_images #list of image paths, stretched to fit box size, must equal number of languages
---smart_color_picker (from background, highest maximal contrast, <3)
+MR. WORLDWIDE (Background Images & Smart Color):
 ```
+python3 mr-worldwide.py --text "Hello" --use_images --languages all --delay 500 --gif_path "mr_worldwide.gif"
+```
+
+### Advanced Options
+- `--use_images`: Enables country-specific background images from `picture_assets/`.
+- `--smart_color_picker`: (Automatic when using images) Picks white or black text based on background luminance for maximum contrast.
 
 **round-robin-sinosoidal**
 Start at A_0, emphasizing for interval-ms time, then cycle through all other options until A_1 for interval-ms time, then A_2, and so on.
