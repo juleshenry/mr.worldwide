@@ -45,7 +45,6 @@ def create_gif(params):
             l,
             params.font_path,
             f_size,
-            char_by_char=params.use_flag_colors or params.rainbow,
         )
         if t_width == 0 and t.strip():
             text_configs[(t, l)] = (0, 0, 0, 0)
@@ -57,7 +56,6 @@ def create_gif(params):
                 l,
                 params.font_path,
                 f_size,
-                char_by_char=params.use_flag_colors or params.rainbow,
             )
         text_configs[(t, l)] = (f_size, t_width, b_left, b_right)
 

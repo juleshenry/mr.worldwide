@@ -1,5 +1,7 @@
 import numpy as np
 import colorsys
+import unicodedata
+from itertools import accumulate
 from scipy.cluster.vq import kmeans, vq
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 from src.assets_manager import (
@@ -68,9 +70,7 @@ def get_contrast_colors(image, region, default_color=None):
     return text_rgb, outline_color
 
 
-def get_actual_text_width(
-    text, lang_code, preferred_font_path, font_size, char_by_char=False
-):
+def get_actual_text_width(text, lang_code, preferred_font_path, font_size):
     """Calculate the actual rendered width of text."""
     font_path = get_font_for_lang(lang_code, text, preferred_font_path)
     if not font_path:
@@ -78,34 +78,82 @@ def get_actual_text_width(
     font = ImageFont.truetype(font_path, font_size)
     temp_image = Image.new("RGB", (1, 1))
     draw = ImageDraw.Draw(temp_image)
-
-    if char_by_char:
-        if not text:
-            return 0, 0, 0
-        w_advance = 0
-        b_left, b_right = 0, 0
-        for i, char in enumerate(text):
-            char_bbox = draw.textbbox((w_advance, 0), char, font=font)
-            if i == 0:
-                b_left = char_bbox[0]
-            if i == len(text) - 1:
-                b_right = char_bbox[2]
-            w_advance += draw.textlength(char, font=font)
-        return b_right - b_left, b_left, b_right
-    else:
-        bbox = draw.textbbox((0, 0), text, font=font)
-        return bbox[2] - bbox[0], bbox[0], bbox[2]
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0], bbox[0], bbox[2]
 
 
-def get_text_vertical_bounds(draw, text, font, char_by_char=False):
-    """Top and bottom of the inked text when drawn at y=0, measured the way it is drawn."""
-    if char_by_char:
-        boxes = [draw.textbbox((0, 0), char, font=font) for char in text if char.strip()]
-        if not boxes:
-            return 0, 0
-        return min(b[1] for b in boxes), max(b[3] for b in boxes)
+def get_text_vertical_bounds(draw, text, font):
+    """Top and bottom of the inked text when drawn at y=0."""
     bbox = draw.textbbox((0, 0), text, font=font)
     return bbox[1], bbox[3]
+
+
+ZERO_WIDTH_JOINERS = ("\u200c", "\u200d")
+
+
+def split_clusters(text):
+    """
+    Splits text into the units that get one colour each: a letter with its combining
+    marks, and virama-joined conjuncts (Indic, Khmer, Myanmar) kept whole.
+    """
+    clusters = []
+    for char in text:
+        prev = clusters[-1][-1] if clusters else None
+        if prev is not None and (
+            unicodedata.category(char).startswith("M")
+            or char in ZERO_WIDTH_JOINERS
+            or prev in ZERO_WIDTH_JOINERS
+            or unicodedata.combining(prev) == 9  # virama
+        ):
+            clusters[-1] += char
+        else:
+            clusters.append(char)
+    return clusters
+
+
+def is_rtl(text):
+    """Whether the first strongly-directional character is right-to-left."""
+    for char in text:
+        direction = unicodedata.bidirectional(char)
+        if direction in ("R", "AL"):
+            return True
+        if direction == "L":
+            return False
+    return False
+
+
+def draw_multicolor_text(image, xy, clusters, font, colors, stroke_width=0, stroke_fill=None):
+    """
+    Draws the text as one shaped run, so Arabic letters join, Hebrew runs right to left
+    and Indic marks stay on their letters, then fills each cluster's span in its colour.
+    """
+    text = "".join(clusters)
+    draw = ImageDraw.Draw(image)
+    if stroke_width and stroke_fill:
+        draw.text(
+            xy, text, font=font, fill=stroke_fill, stroke_width=stroke_width, stroke_fill=stroke_fill
+        )
+    mask = Image.new("L", image.size, 0)
+    ImageDraw.Draw(mask).text(xy, text, font=font, fill=255)
+
+    # Where each cluster starts, from the shaped width of the text before it
+    total = draw.textlength(text, font=font)
+    rtl = is_rtl(text)
+    lefts, offset = [], 0
+    for cluster in clusters:
+        start = draw.textlength(text[:offset], font=font)
+        offset += len(cluster)
+        end = draw.textlength(text[:offset], font=font)
+        lefts.append(total - end if rtl else start)
+
+    order = list(range(len(clusters)))[:: -1 if rtl else 1]  # left to right on screen
+    cuts = [0] + [round(xy[0] + lefts[i]) for i in order[1:]] + [image.width]
+    cuts = list(accumulate(cuts, max))
+    for k, i in enumerate(order):
+        x0, x1 = max(0, cuts[k]), min(image.width, cuts[k + 1])
+        if x1 > x0:
+            box = (x0, 0, x1, image.height)
+            image.paste(colors[i % len(colors)], box, mask.crop(box))
 
 
 def create_frame(
@@ -137,18 +185,17 @@ def create_frame(
     # Centre the ink, not the font's em box: scripts with tall line metrics
     # (Arabic, Tibetan, Myanmar) otherwise sit far below the middle.
     x = (width - (b_left + b_right)) / 2
-    b_top, b_bottom = get_text_vertical_bounds(
-        draw, text, font, char_by_char=params.use_flag_colors or params.rainbow
-    )
+    b_top, b_bottom = get_text_vertical_bounds(draw, text, font)
     y = (height - (b_top + b_bottom)) / 2
     bbox = draw.textbbox((x, y), text, font=font)
 
     # Multi-color logic
     if params.use_flag_colors or params.rainbow:
-        char_colors = (
-            get_rainbow_colors_for_text(text, frame_idx, total_frames)
+        clusters = split_clusters(text)
+        cluster_colors = (
+            get_rainbow_colors_for_text(clusters, frame_idx, total_frames)
             if params.rainbow
-            else get_flag_colors_for_text(text, lang_code)
+            else get_flag_colors_for_text(clusters, lang_code)
         )
         outline_color = (
             (64, 64, 64)
@@ -160,18 +207,9 @@ def create_frame(
             )
         )
         stroke_width = max(2, font_size // 15) if outline_color else 0
-
-        current_x = x
-        for i, char in enumerate(text):
-            draw.text(
-                (current_x, y),
-                char,
-                font=font,
-                fill=char_colors[i % len(char_colors)],
-                stroke_width=stroke_width,
-                stroke_fill=outline_color,
-            )
-            current_x += draw.textlength(char, font=font)
+        draw_multicolor_text(
+            image, (x, y), clusters, font, cluster_colors, stroke_width, outline_color
+        )
     else:
         if params.use_icons or params.smart_color:
             color, outline_color = get_contrast_colors(
