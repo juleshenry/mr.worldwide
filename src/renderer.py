@@ -97,6 +97,17 @@ def get_actual_text_width(
         return bbox[2] - bbox[0], bbox[0], bbox[2]
 
 
+def get_text_vertical_bounds(draw, text, font, char_by_char=False):
+    """Top and bottom of the inked text when drawn at y=0, measured the way it is drawn."""
+    if char_by_char:
+        boxes = [draw.textbbox((0, 0), char, font=font) for char in text if char.strip()]
+        if not boxes:
+            return 0, 0
+        return min(b[1] for b in boxes), max(b[3] for b in boxes)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[1], bbox[3]
+
+
 def create_frame(
     text, lang_code, params, config, frame_idx, total_frames, used_images_paths
 ):
@@ -123,8 +134,13 @@ def create_frame(
         return image
     font = ImageFont.truetype(font_path, font_size)
 
+    # Centre the ink, not the font's em box: scripts with tall line metrics
+    # (Arabic, Tibetan, Myanmar) otherwise sit far below the middle.
     x = (width - (b_left + b_right)) / 2
-    y = (height - font_size) / 2
+    b_top, b_bottom = get_text_vertical_bounds(
+        draw, text, font, char_by_char=params.use_flag_colors or params.rainbow
+    )
+    y = (height - (b_top + b_bottom)) / 2
     bbox = draw.textbbox((x, y), text, font=font)
 
     # Multi-color logic
